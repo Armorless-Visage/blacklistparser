@@ -1,0 +1,5 @@
+dist/
+build/
+blockparser/tests/
+__pycache__/
+*.pyc
