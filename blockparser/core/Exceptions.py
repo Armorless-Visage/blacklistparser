@@ -27,6 +27,14 @@ class NoDomainsFound(ExtractorError):
     '''
 class IncorrectDataType(ExtractorError):
     '''
-    No domains found inside data
+    Data type is not supported
+    '''
+class BadFileType(ExtractorError):
+    '''
+    File is of incorrect type
+    '''
+class EmptyList(ExtractorError):
+    '''
+    List contains no items
     '''
 
