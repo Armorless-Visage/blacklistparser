@@ -4,7 +4,7 @@
 from distutils.core import setup
 
 setup(
-        name='blockparser',
+        name='gphull',
         version='0.0.1.dev1',
         description='ip/domain blacklist management tools',
         author='Liam Nolan',
