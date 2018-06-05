@@ -20,11 +20,11 @@ class Manager:
     def connect_to_db(self, db_path=None):
         if path.isfile(db_path):
             # check file is sqlite3 format
-            if Utilities.sqlite3_db_file_type(db_path) is False:
+            if self.sqlite3_db_file_type(db_path) is False:
                 errmsg = 'Existing file ' + str(db_path) + ' is not a sqlite3 database'
                 raise Exceptions.BadFileType(errmsg)
             # check file has the right application_id for blocklistparser
-            if Utilities.sqlite3_db_application_id(db_path) is False:
+            if self.sqlite3_db_application_id(db_path) is False:
                 errmsg = 'File is a sqlite3 db, but the application_id is not correct'
                 raise Exceptions.BadFileType(errmsg)
         try:
@@ -72,39 +72,37 @@ class Manager:
         except sqlite3.DatabaseError:
             raise
         
-    
-class Utilities:
-    def pull_names(db_manager):
+    def pull_names(self):
         '''
         returns a list of tuples of elements name, rowid from the input table
         select arg is passed as where=? to sqlite3
         '''
         line = (" SELECT name, rowid FROM data ")
-        cur = db_manager.db_cur
+        cur = self.db_cur
         cur.execute(line)
         return cur.fetchall()
     
-    def pull_names_within_timout(db_manager, timeout):
+    def pull_names_within_timout(self, timeout):
         '''
         returns a list of tuples of elements name, rowid from the input table
         select arg is passed as where=? to sqlite3
         '''
         join = (timeout, time())
         line = (' SELECT name FROM data WHERE last_seen + ? >= ? ')
-        cur = db_manager.db_cur
+        cur = self.db_cur
         cur.execute(line)
         return cur.fetchall()
-    def pull_names_2(db_manager, timeout, group):
+    def pull_names_2(self, timeout, group):
         join = (timeout, time())
-        line = ('SELECT name from data WHERE (last_seen + ? >= ?) AND (group = ?)'
+        line = ('SELECT name from data WHERE (last_seen + ? >= ?) AND (group = ?)')
         
     
-    def pull_active_source_urls(db_manager):
+    def pull_active_source_urls(self):
         '''
         return a list of the blacklist urls that need updating from sources
         '''
         ctime = (time(),)
-        cur = db_manager.db_cur
+        cur = self.db_cur
         cur.execute('''SELECT url FROM sources WHERE ? >= last_updated + timeout''', ctime)
         # any invalid urls found increment this
         errcnt = 0
@@ -120,20 +118,20 @@ class Utilities:
             errmsg = ('All urls on cooldown or none in database. Invalid urls found in db: ' + str(errcnt))
             raise Exceptions.NoMatchesFound(errmsg)
         
-    def bulk_add(db_manager, data_lst, data_type, source_url):
+    def bulk_add(self, data_lst, data_type, source_url):
         '''
         add a list of items to the db using executemany
         ! Does not validate do it elsewhere TODO integrate val here
         ! Does not explicitly commit
         '''
-        cur = db_manager.db_cur
+        cur = self.db_cur
         current_time = time()
 
         time_update = [] 
         data_insert = []
          
         # check there is something to add then format and add them all using executemany
-        if (len(validated_lst) < 1):
+        if not data_lst:
             errmsg = 'No items to add.'
             raise Exceptions.EmptyList(errmsg) 
         for each in data_lst:
@@ -143,21 +141,21 @@ class Utilities:
         
         iline = (" INSERT OR IGNORE INTO data" +
                 " VALUES ( ?, ?, ?, ?, ? )")
-        cur.executemany(iline, joined)
-        tline = (" UPDATE " + table_name + 
+        cur.executemany(iline, data_insert)
+        tline = (" UPDATE data" + 
                 " SET last_seen=? WHERE name=? AND source_url=?")
-        executemany(tline, time_update)
+        cur.executemany(tline, time_update)
         #NOTE: this code above only writes the last url w/ addr to source
         return True
     
-    def add_element(db_manager, data, data_type, source_url):
+    def add_element(self, data, data_type, source_url):
         '''
         add a single element to the db
         NOTE: this checks time.time() every time it is executed, probably
         going to be very slow if it's called lots
         '''
-        cur = db_manager.db_cur
-        if type(address) is not str:
+        cur = self.db_cur
+        if type(data) is not str:
             raise Exceptions.NotString('address must be a string')
         element = data.rstrip()
         current_time = time()
@@ -171,7 +169,7 @@ class Utilities:
         cur.execute(line, data_insert)
         cur.execute(time_line, time_update)
     
-    def add_source_url(db_manager, url, dataformat, timeout):
+    def add_source_url(self, url, dataformat, timeout):
         '''
         - Add a blacklist source to the database, returns True for OK, False
           otherwise
@@ -183,7 +181,7 @@ class Utilities:
         '''
         # NOTE: Do sql real vals overflow after 64b?
     
-        cur = db_manager.db_cur
+        cur = self.db_cur
         # url, source page format, page update timeout,
         # last_updated set to 61sec after epoch (never)
         t = ( str(url), str(dataformat), float(timeout), float(61) )
@@ -194,11 +192,11 @@ class Utilities:
             raise
         return True
 
-    def delete_source_url(db_manager, url):
+    def delete_source_url(self, url):
         '''
         delete a blacklist source url from the database
         '''
-        cur = db_manager.db_cur
+        cur = self.db_cur
         url_tuple = ( str(url), )
         try:
             cur.execute('''DELETE FROM sources WHERE url=?''', url_tuple)
@@ -206,15 +204,16 @@ class Utilities:
             raise
         return True
             
-    def touch_source_url(db_manager, url):
+    def touch_source_url(self, url):
         t = (time(), url)
         try:
-            cur.execute('''UPDATE sources SET last_updated=? WHERE url=?''', t)
+            self.db_cur.execute('''UPDATE sources SET last_updated=? WHERE url=?''', t)
         except sqlite3.DatabaseError:
             raise
-            return false
+            return False
         return True
-   
+
+    @staticmethod 
     def sqlite3_db_file_type(pathname):
         with open(pathname, 'rb') as db_file:                         
             header = db_file.read(16)                                 
@@ -223,7 +222,8 @@ class Utilities:
                 return pathname
             else:                  
                 db_file.close()    
-                return False       
+                return False
+    @staticmethod
     def sqlite3_db_application_id(pathname):
         with open(pathname, 'rb') as db_file:
             db_file.seek(68)

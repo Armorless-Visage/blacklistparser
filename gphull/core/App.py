@@ -34,7 +34,7 @@ class App:
             prog='gphull',
             conflict_handler='resolve',
             add_help=False)
-        self.subparser = self.parent_parser.add_subparsers(dest=subparser_name)
+        self.subparser = self.parent_parser.add_subparsers(dest=self.subparser_name)
         self.source_parser = self.subparser.add_parser('source')
         self.address_parser = self.subparser.add_parser('address')
         self.update_parser = self.subparser.add_parser('update')
@@ -91,7 +91,7 @@ class App:
         source subparser
         '''
         self.source_parser = self.subparser.add_parser('source')
-        self.source_parser.set_defaults(func=action_source)
+        self.source_parser.set_defaults(func=self.action_source)
         self.add_ex = self.source_parser.add_mututally_exclusive_group(required=True)
         self.add_ex.add_argument(
             '-a',
@@ -124,7 +124,7 @@ class App:
         output subparser
         '''
         self.output_parser = self.subparser.add_parser('output')
-        self.output_parser.set_defaults(func=action_output)
+        self.output_parser.set_defaults(func=self.action_output)
         self.out_ex = self.output_parser.add_mututally_exclusive_group(required=True)
         self.output_parser.add_argument(
             '-f',
@@ -221,7 +221,7 @@ class App:
                     self.db,
                     self.args.address,
                     self.args.format,
-                    self.source_url)
+                    self.args.source_url)
         elif self.args.remove is not None:
             raise self.source_parser.error('TODO implement this!!!')
         else:
