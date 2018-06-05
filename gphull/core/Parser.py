@@ -30,7 +30,7 @@ class ABPParser(BaseParser):
         eg. ||google.com^$third-party
         '''
         # regex string for ABP domains in Regex.abp_domain
-        pattern = re.compile(Regex.abp_domain, re.MULTILINE)
+        pattern = re.compile(Regex.ABP_DOMAIN, re.MULTILINE)
  
         # exclude third party rules
     #   if third_party is not True:
@@ -59,7 +59,7 @@ class NewlineParser(BaseParser):
         google.com
         wikipedia.org
         '''
-        pattern = re.compile(Regex.newline_domain, re.MULTILINE)
+        pattern = re.compile(Regex.NEWLINE_DOMAIN, re.MULTILINE)
         matches = re.findall(pattern, data)
         if matches:
             return matches
@@ -69,7 +69,7 @@ class NewlineParser(BaseParser):
 class IpsetParser(BaseParser):
     @staticmethod
     def extract_data(data):
-        pattern = re.compile(Regex.ipv4_addr, re.MULTILINE)
+        pattern = re.compile(Regex.IPV4_ADDR, re.MULTILINE)
         matches = re.findall(pattern, data)
 
         if matches:
@@ -101,4 +101,4 @@ def format_detector(data):
 
     raise Exceptions.IncorrectDataType('Unable to detect format of input data.')
 
-SHORTNAMES = {'adblock' : ABPParser, 'newline' : NewlineParser, 'ipset' : IpsetParser}
+SHORTNAME = {'adblock' : ABPParser, 'newline' : NewlineParser, 'ipset' : IpsetParser}
