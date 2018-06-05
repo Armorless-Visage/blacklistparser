@@ -69,7 +69,7 @@ def format_type(string):
     returns input if the input string matches
     a supported data type
     '''
-    if string in Parser.types.keys():
+    if string in Parser.SHORTNAME.keys():
         return string
     return None
 def frequency_range(integer):
