@@ -9,7 +9,7 @@ class Content(metaclass=ABCMeta):
 
         self.input_data = input_data
         self.datatype = Parser.format_detector(self.input_data)
-        self.parser = Parser.types[self.datatype](self.input_data)
+        self.parser = Parser.SHORTNAME[self.datatype](self.input_data)
         self.content = parser(self.input_data)
         self.source_url = source_url
 
@@ -24,7 +24,7 @@ class DataList(Content):
         self.index = len(self.content)
         
         # check args
-        if self.datatype not in Parser.types.keys():
+        if self.datatype not in Parser.SHORTNAME.keys():
             errmsg = 'data type' + str(self.datatype) + 'not supported'
             raise Exceptions.IncorrectDataType(errmsg)
         if self.source_url is not str:
@@ -43,7 +43,7 @@ class DataList(Content):
         '''
         add this list to a databaseb via db connection
         '''
-        if Database.Utilities.bulk_add(
+        if Database.Manager.bulk_add(
                 db_manager,
                 self.content,
                 self.datatype,
@@ -60,7 +60,7 @@ class DataElement(Content):
         # check args
         if self.input_data is not str:
             raise TypeError('data must be a string')
-        if self.datatype not in Parser.types.keys():
+        if self.datatype not in Parser.SHORTNAME.keys():
             errmsg = 'data type' + str(self.datatype) + 'not supported'
             raise Exceptions.IncorrectDataType(errmsg)
         if self.source_url is not str:
@@ -70,7 +70,7 @@ class DataElement(Content):
         '''
         add this list to a databaseb via db connection
         '''
-        if Database.Utilities.add_element(
+        if Database.Manager.add_element(
                 db_manager,
                 self.content,
                 self.datatype,
