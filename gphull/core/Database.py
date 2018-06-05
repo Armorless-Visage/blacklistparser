@@ -14,10 +14,6 @@ class Manager:
         - opens a connection to a sqlite3 db (or creates a new one)
         - db_path is the pathname of the sqlite3 database
         '''
-        self.db_conn = self.connect_to_db(db_path)
-        self.db_cur = self.db_conn.cursor()
-
-    def connect_to_db(self, db_path=None):
         if path.isfile(db_path):
             # check file is sqlite3 format
             if self.sqlite3_db_file_type(db_path) is False:
@@ -28,16 +24,16 @@ class Manager:
                 errmsg = 'File is a sqlite3 db, but the application_id is not correct'
                 raise Exceptions.BadFileType(errmsg)
         try:
-            db_conn = sqlite3.connect(db_path)
-            self.init_db(db_conn)
+            self.db_conn = sqlite3.connect(db_path)
+            self.db_cur = self.db_conn.cursor()
+            self.init_db()
         except sqlite3.OperationalError or sqlite3.DatabaseError:
             # TODO insert exception handling here
             #      - permissions check, symlink, path
             raise
 
-        return db_conn
 
-    def init_db(self, db_conn):
+    def init_db(self):
         '''
         initalizes the database tables 'sources' to hold source urls
         and update frequency, and 'data' to hold the actual content in those pages
@@ -57,17 +53,17 @@ class Manager:
                 "UNIQUE ( name, source_url ))")
         groups_table = ("CREATE TABLE IF NOT EXISTS data ( " +
                 "name TEXT, " + 
-                "membership TEXT, ")
+                "membership TEXT )")
         application_id = ("PRAGMA application_id = 1915402268")
         user_version = ("PRAGMA user_version = 0x1")
-        cur = db_conn.cursor()
         try:
-            cur.execute(source_table)
-            cur.execute(data_table)
-            cur.execute(groups_table)
-            cur.execute(application_id)
-            cur.execute(user_version)
-            db_conn.commit()
+            self.db_cur.execute(application_id)
+            self.db_cur.execute(user_version)
+
+            self.db_cur.execute(source_table)
+            self.db_cur.execute(data_table)
+            self.db_cur.execute(groups_table)
+            self.db_conn.commit()
             return True
         except sqlite3.DatabaseError:
             raise
@@ -79,7 +75,7 @@ class Manager:
         '''
         line = (" SELECT name, rowid FROM data ")
         cur = self.db_cur
-        cur.execute(line)
+        self.db_cur.execute(line)
         return cur.fetchall()
     
     def pull_names_within_timout(self, timeout):
@@ -90,7 +86,7 @@ class Manager:
         join = (timeout, time())
         line = (' SELECT name FROM data WHERE last_seen + ? >= ? ')
         cur = self.db_cur
-        cur.execute(line)
+        self.db_cur.execute(line)
         return cur.fetchall()
     def pull_names_2(self, timeout, group):
         join = (timeout, time())
@@ -103,7 +99,7 @@ class Manager:
         '''
         ctime = (time(),)
         cur = self.db_cur
-        cur.execute('''SELECT url FROM sources WHERE ? >= last_updated + timeout''', ctime)
+        self.db_cur.execute('''SELECT url FROM sources WHERE ? >= last_updated + timeout''', ctime)
         # any invalid urls found increment this
         errcnt = 0
         urls = []
@@ -141,10 +137,10 @@ class Manager:
         
         iline = (" INSERT OR IGNORE INTO data" +
                 " VALUES ( ?, ?, ?, ?, ? )")
-        cur.executemany(iline, data_insert)
+        self.db_cur.executemany(iline, data_insert)
         tline = (" UPDATE data" + 
                 " SET last_seen=? WHERE name=? AND source_url=?")
-        cur.executemany(tline, time_update)
+        self.db_cur.executemany(tline, time_update)
         #NOTE: this code above only writes the last url w/ addr to source
         return True
     
@@ -166,8 +162,8 @@ class Manager:
                 " VALUES ( ?, ?, ?, ?, ? ) ")
         time_line = (" UPDATE data" +
             " SET last_seen=?, source=? WHERE name=?")
-        cur.execute(line, data_insert)
-        cur.execute(time_line, time_update)
+        self.db_cur.execute(line, data_insert)
+        self.db_cur.execute(time_line, time_update)
     
     def add_source_url(self, url, dataformat, timeout):
         '''
@@ -187,7 +183,7 @@ class Manager:
         t = ( str(url), str(dataformat), float(timeout), float(61) )
         
         try:
-            cur.execute('''INSERT OR ABORT INTO sources VALUES ( ?, ?, ?, ? )''', t)
+            self.db_cur.execute('''INSERT OR IGNORE INTO sources VALUES ( ?, ?, ?, ? )''', t)
         except sqlite3.DatabaseError:
             raise
         return True
@@ -199,7 +195,7 @@ class Manager:
         cur = self.db_cur
         url_tuple = ( str(url), )
         try:
-            cur.execute('''DELETE FROM sources WHERE url=?''', url_tuple)
+            self.db_cur.execute('''DELETE FROM sources WHERE url=?''', url_tuple)
         except sqlite3.DatabaseError:
             raise
         return True
@@ -210,6 +206,15 @@ class Manager:
             self.db_cur.execute('''UPDATE sources SET last_updated=? WHERE url=?''', t)
         except sqlite3.DatabaseError:
             raise
+            return False
+        return True
+    def test_source_url(self, url):
+        url_tuple = (str(url),)
+        try:
+            self.db_cur.execute('''SELECT * FROM sources WHERE url=?''', url_tuple)
+        except sqlite3.DatabaseError:
+            raise
+        if self.db_cur.fetchone() is None:
             return False
         return True
 

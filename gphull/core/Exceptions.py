@@ -45,5 +45,7 @@ class NetError(ExtractorError):
     '''
     network error
     '''
-
-
+class DatabaseError(ExtractorError):
+    '''
+    Error with database
+    '''

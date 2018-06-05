@@ -10,7 +10,7 @@ class Content(metaclass=ABCMeta):
         self.input_data = input_data
         self.datatype = Parser.format_detector(self.input_data)
         self.parser = Parser.SHORTNAME[self.datatype](self.input_data)
-        self.content = parser(self.input_data)
+        self.content = self.parser(self.input_data)
         self.source_url = source_url
 
         @abstractmethod
