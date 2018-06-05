@@ -198,7 +198,7 @@ class App:
     def action_source(self):
         if self.args.add is not None:
             # attempt to add a url
-            Database.Utilities.add_source_url(
+            Database.Manager.add_source_url(
                 self.db,
                 self.args.add,
                 self.args.format,
@@ -208,7 +208,7 @@ class App:
         # remove a url
         elif self.args.remove is not None:
             # attempt to remove url 
-            Database.Utilities.delete_source_url(
+            Database.Manager.delete_source_url(
                 self.db,
                 self.args.remove)
             self.db.db_conn.commit()
@@ -217,7 +217,7 @@ class App:
     
     def action_adddress(self):
         if self.args.add is not None:
-            Database.Utilities.add_element(
+            Database.Manager.add_element(
                     self.db,
                     self.args.address,
                     self.args.format,
@@ -232,4 +232,4 @@ class App:
             raise self.source_parser.error('Must specify a output --format')
         if self.args.output is None:
             raise self.source_parser.error('Must specify a output --file')
-#        output_list = Database.Utilities.pull_names(    
+#        output_list = Database.Manager.pull_names(    
