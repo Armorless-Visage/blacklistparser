@@ -6,6 +6,7 @@
 
 from argparse import ArgumentParser
 from argparse import ArgumentError
+from argparse import FileType
 from logging import getLogger, StreamHandler, Formatter
 from logging.handlers import WatchedFileHandler, SysLogHandler
 from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
@@ -17,23 +18,27 @@ class App:
         '''
         setup base class for pybl applications
         '''
+        self.setup_logging(
+                self.args.logpath,
+                self.args.verbose,
+                self.args.quiet,
+                self.args.syslog)
+        self.setup_args()
+        self.db = Database.Manager(self.args.database)
 
     def setup_args(self):        
         '''
         argparse
         '''
-        self.parent_parser = ArgumentParser(prog='gphull', conflict_handler='resolve', add_help=False)
-    
-        self.parent_parser.add_argument(
-                'action',
-                help='''source: add or remove a source url
-                address: add or remove an address
-                update: updating database from source urls
-                output: generate blacklists from database''',
-                action='store',
-                type=str,
-                choices=['source', 'address', 'update', 'output']
-                )
+        self.parent_parser = ArgumentParser(
+            prog='gphull',
+            conflict_handler='resolve',
+            add_help=False)
+        self.subparser = self.parent_parser.add_subparsers(dest=subparser_name)
+        self.source_parser = self.subparser.add_parser('source')
+        self.address_parser = self.subparser.add_parser('address')
+        self.update_parser = self.subparser.add_parser('update')
+        self.output_parser = self.subparser.add_parser('output')
     
         # add option to control logging output level
         self.logging = self.parent_parser.add_argument_group()
@@ -74,126 +79,71 @@ class App:
             action='store_true',
             default=True)
     
-        # setup optional and positionally dependant args
-    
         self.parent_parser.add_argument(
+            '-d',
+            '--database',
+            help='file path of database',
+            type=FileType('wb', 0),
+            action='store'
+            )
+    
+        '''
+        source subparser
+        '''
+        self.source_parser = self.subparser.add_parser('source')
+        self.source_parser.set_defaults(func=action_source)
+        self.add_ex = self.source_parser.add_mututally_exclusive_group(required=True)
+        self.add_ex.add_argument(
+            '-a',
+            '--add',
+            help='Add a source url eg. http://example.com/blacklist',
+            action='store',
+            )
+        self.source_parser.add_argument(
+            '-f',
+            '--frequency',
+            help='Frequency in seconds to update from source url',
+            action='store',
+            type=types.frequency_range,
+            )
+        
+        self.add_ex.add_argument(
+            '-r',
+            '--remove',
+            help='Remove a source url.',
+            action='store',
+            )
+        self.source_parser.add_argument(
             '-f',
             '--format',
             help='input/output format',
             type=types.format_type,
             action='store'
             )
-        self.parent_parser.add_argument(
+        '''
+        output subparser
+        '''
+        self.output_parser = self.subparser.add_parser('output')
+        self.output_parser.set_defaults(func=action_output)
+        self.out_ex = self.output_parser.add_mututally_exclusive_group(required=True)
+        self.output_parser.add_argument(
+            '-f',
+            '--format',
+            help='input/output format',
+            type=types.format_type,
+            action='store'
+            )
+        self.output_parser.add_argument(
             '-o',
             '--output',
             help='write to a file specified by this argument',
             type=types.base_path_type,
             action='store',
             )
-        self.parent_parser.add_argument(
-            '-e',
-            '--timeout',
-            help='n seconds before url or data expires',
-            action='store',
-            )
-    
-        self.add_remove = self.parent_parser.add_mutually_exclusive_group()
-    
-        self.add_remove.add_argument(
-            '-a',
-            '--add',
-            help='Add an address. Either plain ip, cidr or a domain name',
-            action='store',
-            )
-        
-        self.add_remove.add_argument(
-            '-r',
-            '--remove',
-            help='Remove an address. Either plain ip, cidr or a domain name',
-            action='store',
-            )
-    
-        self.parent_parser.add_argument(
-            '-d',
-            '--database',
-            help='file path of database',
-            type=types.base_path_type,
-            action='store'
-            )
     
         self.args = self.parent_parser.parse_args()
+        return self.args
         
-        self.setup_logging(
-                self.args.logpath,
-                self.args.verbose,
-                self.args.quiet,
-                self.args.syslog)
-    
-        # check for database arg
-        if self.args.database is None:
-            raise ArgumentError('must specify a --database')
-        
-        self.db = Database.Manager(self.args.database)
-    
-        if self.args.action == 'source':
-            # add a url
-            if (self.args.add is not None
-                and self.args.timeout is None):
-                    raise ArgumentError('--timeout <s> must be specified')
-            if self.args.add is not None:
-                Database.Utilities.add_source_url(
-                    self.db,
-                    self.args.add,
-                    self.args.format,
-                    self.args.timeout)
-                self.db.db_conn.commit()
-    
-            # remove a url
-            elif self.args.remove is not None:
-                # attempt to remove url 
-                Database.Utilities.delete_source_url(
-                    self.db,
-                    self.args.remove)
-                self.db.db_conn.commit()
-            else:
-                s_usg = ('<source> usage: source --format "ipset" ' +
-                    '--timeout 3600 --add "https://example.com/blacklist"')
-                raise ArgumentError(s_usg)
-    
-                
-        if self.args.action == 'addresss':
-    
-            if self.args.timeout is not None:
-                raise ArgumentError('--timeout can\'t be applied to an address')
-            if self.args.add is True:
-                Data
-                if self.args.add is True:
-                    Database.Utilities.add_element(
-                            self.db,
-                            self.args.address,
-                            self.args.add)
-    
-        if self.args.action == 'update':
-            if (self.args.timeout is not None
-            or self.args.add is not None
-            or self.args.remove is not None
-            or self.args.format is not None):
-                u_usg = '<update> usage: update --database /path/to/db.sqlite'
-                raise ArgumentError(u_usg)
-            webpage = net.get_webpage(self.args.url)
-            update_data = Data.DataList(webpage, webpage.host())
-    
-            
-           
-    
-        if self.args.action == 'output':
-            if (self.args.output is None
-            or self.args.format is None):
-                o_usg = ('<output> usage: output -d /path/to/db.sqlite3 '
-                        + '-f ipset -o /path/to/blacklist.ipset')
-                raise(AgumentError('o_usg'))
-    
-    
     def setup_logging(self, log_path=None, verbose=False, quiet=False, use_syslog=False):
         '''
         start logging facilities
@@ -245,8 +195,41 @@ class App:
         debugmsg = ('setting log level to ' + str(loglevel))
         self.log.debug(debugmsg)
     
-if __name__ == '__main__':
-    try:
-        App()
-    except KeyboardInterrupt:
-        raise
+    def action_source(self):
+        if self.args.add is not None:
+            # attempt to add a url
+            Database.Utilities.add_source_url(
+                self.db,
+                self.args.add,
+                self.args.format,
+                self.args.frequency)
+            self.db.db_conn.commit()
+    
+        # remove a url
+        elif self.args.remove is not None:
+            # attempt to remove url 
+            Database.Utilities.delete_source_url(
+                self.db,
+                self.args.remove)
+            self.db.db_conn.commit()
+        else:
+            raise self.source_parser.error()
+    
+    def action_adddress(self):
+        if self.args.add is not None:
+            Database.Utilities.add_element(
+                    self.db,
+                    self.args.address,
+                    self.args.format,
+                    self.source_url)
+        elif self.args.remove is not None:
+            raise self.source_parser.error('TODO implement this!!!')
+        else:
+            raise self.source_parser.error()
+    
+    def action_output(self):
+        if self.args.format is None:
+            raise self.source_parser.error('Must specify a output --format')
+        if self.args.output is None:
+            raise self.source_parser.error('Must specify a output --file')
+#        output_list = Database.Utilities.pull_names(    

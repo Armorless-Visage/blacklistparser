@@ -55,12 +55,16 @@ class Manager:
                 "last_seen REAL, " +
                 "source_url TEXT, " +
                 "UNIQUE ( name, source_url ))")
+        groups_table = ("CREATE TABLE IF NOT EXISTS data ( " +
+                "name TEXT, " + 
+                "membership TEXT, ")
         application_id = ("PRAGMA application_id = 1915402268")
         user_version = ("PRAGMA user_version = 0x1")
         cur = db_conn.cursor()
         try:
             cur.execute(source_table)
             cur.execute(data_table)
+            cur.execute(groups_table)
             cur.execute(application_id)
             cur.execute(user_version)
             db_conn.commit()
@@ -90,6 +94,10 @@ class Utilities:
         cur = db_manager.db_cur
         cur.execute(line)
         return cur.fetchall()
+    def pull_names_2(db_manager, timeout, group):
+        join = (timeout, time())
+        line = ('SELECT name from data WHERE (last_seen + ? >= ?) AND (group = ?)'
+        
     
     def pull_active_source_urls(db_manager):
         '''
@@ -178,13 +186,12 @@ class Utilities:
         cur = db_manager.db_cur
         # url, source page format, page update timeout,
         # last_updated set to 61sec after epoch (never)
-        t = ( str(url), str(table_name), float(timeout), float(61) )
+        t = ( str(url), str(dataformat), float(timeout), float(61) )
         
         try:
-            cur.execute('''INSERT OR IGNORE INTO sources VALUES ( ?, ?, ?, ? )''', t)
-        except DatabaseError:
+            cur.execute('''INSERT OR ABORT INTO sources VALUES ( ?, ?, ?, ? )''', t)
+        except sqlite3.DatabaseError:
             raise
-            return False
         return True
 
     def delete_source_url(db_manager, url):
@@ -192,18 +199,18 @@ class Utilities:
         delete a blacklist source url from the database
         '''
         cur = db_manager.db_cur
+        url_tuple = ( str(url), )
         try:
-            cur.execute('''DELETE FROM sources WHERE url=?''', url)
-        except DatabaseError:
+            cur.execute('''DELETE FROM sources WHERE url=?''', url_tuple)
+        except sqlite3.DatabaseError:
             raise
-            return False
         return True
             
     def touch_source_url(db_manager, url):
         t = (time(), url)
         try:
             cur.execute('''UPDATE sources SET last_updated=? WHERE url=?''', t)
-        except DatabaseError:
+        except sqlite3.DatabaseError:
             raise
             return false
         return True
@@ -220,8 +227,9 @@ class Utilities:
     def sqlite3_db_application_id(pathname):
         with open(pathname, 'rb') as db_file:
             db_file.seek(68)
-            application_id = db_file.read(4)
-            print(application_id)
+            # application_id is a uint32 in big endian format
+            # using struct.unpack to get the value
+            application_id = unpack('>I', db_file.read(4))[0]
             if application_id == 0x722ab81c:
                 db_file.close()
                 return pathname

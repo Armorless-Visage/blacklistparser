@@ -2,20 +2,22 @@
 # Liam Nolan (c) 2018 ISC
 
 import re
-from gphull.core import Exceptions, Regex
 from abc import ABCMeta, abstractmethod
+from gphull.core import Exceptions, Regex
 
 class BaseParser(metaclass=ABCMeta):
 
     def __init__(self, data):
         self.origin_data = data
-        self.results = self.extract_data(self.origin_data) 
-        
+        self.results = self.extract_data(self.origin_data)
+
     @abstractmethod
+    @staticmethod
     def extract_data(data):
         pass
 
 class ABPParser(BaseParser):
+    @staticmethod
     def extract_data(data):
         '''
         use re.finall to get domains out of ABP filters and return as a list of
@@ -27,16 +29,15 @@ class ABPParser(BaseParser):
         eg. ||google.com^
         eg. ||google.com^$third-party
         '''
-        
         # regex string for ABP domains in Regex.abp_domain
         pattern = re.compile(Regex.abp_domain, re.MULTILINE)
-    
+ 
         # exclude third party rules
     #   if third_party is not True:
     #       pattern = re.compile(Regex.abp_domain_nothird, re.MULTILINE)
-        
-        matches = re.findall(pattern, inputstr)
-        if len(matches) != 0:
+
+        matches = re.findall(pattern, data)
+        if matches:
             '''
             match objects come in a tuple for each regex group so the group
             containing the domain name must be separated
@@ -50,6 +51,7 @@ class ABPParser(BaseParser):
             raise Exceptions.NoMatchesFound("No ABP syntax domains found.")
 
 class NewlineParser(BaseParser):
+    @staticmethod
     def extract_data(data):
         '''
         Extract newline data into a list
@@ -58,19 +60,19 @@ class NewlineParser(BaseParser):
         wikipedia.org
         '''
         pattern = re.compile(Regex.newline_domain, re.MULTILINE)
-        matches = re.matchall(Regex.newline_domain)
-        if len(matches) != 0:
+        matches = re.findall(pattern, data)
+        if matches:
             return matches
-    
         else:
             raise Exceptions.NoMatchesFound("No newline formatted domains found.")
 
 class IpsetParser(BaseParser):
+    @staticmethod
     def extract_data(data):
         pattern = re.compile(Regex.ipv4_addr, re.MULTILINE)
-        matches = re.matchall(pattern)
+        matches = re.findall(pattern, data)
 
-        if len(matches) != 0:
+        if matches:
             return matches
         else:
             raise Exceptions.NoMatchesFound("No ip addreses found.")
@@ -86,18 +88,17 @@ def format_detector(data):
     '''
     # test adblock plus filter format
     try:
-        ABPParser.extract_data(data)    
-        return 'adblock'       
+        ABPParser.extract_data(data)
+        return 'adblock' 
     except Exceptions.NoMatchesFound:
         pass
     # test newline format
     try:
         NewlineParser.extract_data(data)
-        return 'newline'       
+        return 'newline'
     except Exceptions.NoMatchesFound:
         pass
 
     raise Exceptions.IncorrectDataType('Unable to detect format of input data.')
 
-types = { 'adblock' : ABPParser, 'newline' : NewlineParser, 'ipset' : IpsetParser }
-
+SHORTNAMES = {'adblock' : ABPParser, 'newline' : NewlineParser, 'ipset' : IpsetParser}

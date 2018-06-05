@@ -4,7 +4,6 @@
 # Full licence terms located in LICENCE file
 
 from os import path
-from sys import exit
 from sqlite3 import Cursor
 from gphull.core import Parser
 
@@ -20,24 +19,21 @@ def base_path_type(pathname):
     '''
     if path.isdir(path.dirname(pathname)) is True:
         return pathname
-    else:
-        return None
+    return None
 def dir_type(pathname):
     '''
     custom type for checking a directory exists
     '''
     if path.isdir(pathname) is True:
         return pathname
-    else:
-        return None
+    return None
 def file_type(pathname):
     '''
     custom type for checking a file exists
     '''
     if path.isfile(pathname) is True:
         return pathname
-    else:
-        return None
+    return None
 def expire_range(num):
     '''
     type for checking source url query timeout 'expiry'
@@ -45,8 +41,7 @@ def expire_range(num):
     '''
     if num >= 1.0 and num <= 315328464000.0:
         return num
-    else:
-        return None
+    return None
 
 def sqlite3_cursor_type(cursor):
     '''
@@ -55,8 +50,7 @@ def sqlite3_cursor_type(cursor):
     '''
     if type(cursor) == Cursor:
         return cursor
-    else:
-        return None
+    return None
 
 def log_level_type(level):
     '''
@@ -68,8 +62,7 @@ def log_level_type(level):
     levels = ('debug', 'notice', 'critical')
     if level in levels:
         return level
-    else:
-        return None
+    return None
 
 def format_type(string):
     '''
@@ -78,6 +71,11 @@ def format_type(string):
     '''
     if string in Parser.types.keys():
         return string
-    else:
-        return None
-
+    return None
+def frequency_range(integer):
+    '''
+    type for argparse returns true for a positive integer
+    '''
+    if integer is int and integer > 0:
+        return integer
+    return None

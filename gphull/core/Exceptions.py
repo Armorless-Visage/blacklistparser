@@ -37,4 +37,13 @@ class EmptyList(ExtractorError):
     '''
     List contains no items
     '''
+class DatabaseError(ExtractorError):
+    '''
+    sqlite3 database error
+    '''
+class NetError(ExtractorError):
+    '''
+    network error
+    '''
+
 

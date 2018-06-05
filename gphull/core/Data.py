@@ -6,7 +6,7 @@ from abc import abstractmethod, ABCMeta
 
 class Content(metaclass=ABCMeta):
     def __init__(self, input_data, source_url):
-        
+
         self.input_data = input_data
         self.datatype = Parser.format_detector(self.input_data)
         self.parser = Parser.types[self.datatype](self.input_data)
@@ -18,7 +18,8 @@ class Content(metaclass=ABCMeta):
             pass
 
 class DataList(Content):
-    def __init__(self):
+    def __init__(self, input_data, source_url):
+        super()
         # for iter
         self.index = len(self.content)
         
@@ -55,6 +56,7 @@ class DataList(Content):
 
 class DataElement(Content):
     def __init__(self, data, datatype, source_url):
+        super()
         # check args
         if self.input_data is not str:
             raise TypeError('data must be a string')
