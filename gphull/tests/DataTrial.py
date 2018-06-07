@@ -2,7 +2,7 @@
 # Liam Nolan 2018 (c) ISC
 
 import unittest
-from bdigester.core import Parser, Data
+from gphull.core import Parser, Data
 
 def test():
     with open('bdigester/tests/data/easylist.txt', 'r') as testdata:

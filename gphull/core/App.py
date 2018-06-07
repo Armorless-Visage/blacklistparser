@@ -128,7 +128,9 @@ class App:
             '--type',
             help='input/output format',
             type=types.format_type,
-            action='store'
+            action='store',
+            choices=Parser.SHORTNAME.keys(),
+            required=True
             )
         '''
         output subparser
@@ -160,6 +162,11 @@ class App:
             # attempt to add a url
             logmsg = ('attempting to add source url: ' + self.args.add)
             self.logger.log.info(logmsg)
+            if (Database.Manager.test_source_url(
+                self.db,
+                self.args.add) is True):
+                self.logger.log.info('source url already present in database')
+                exit(0)
             Database.Manager.add_source_url(
                 self.db,
                 self.args.add,
@@ -170,13 +177,14 @@ class App:
             if (Database.Manager.test_source_url(
                 self.db,
                 self.args.add) is True):
-                self.logger.log.info('added source url to database OK')
+                self.logger.log.info('source added to database OK')
                 exit(0)
             else:
                 self.logger.log.error('FAILED to add source url to database')
                 exit(1)
 
         # remove a url
+        # TODO confirm removal
         elif self.args.remove is not None:
             # attempt to remove url 
             Database.Manager.delete_source_url(

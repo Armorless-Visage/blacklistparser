@@ -5,7 +5,7 @@ import unittest
 from bdigester.core import Parser
 
 def test():
-    with open('bdigester/tests/data/easylist.txt', 'r') as testdata:
+    with open('gphull/tests/data/easylist.txt', 'r') as testdata:
         print("begin")
         try:
             matches = Parser.find_abp_data(testdata.read())

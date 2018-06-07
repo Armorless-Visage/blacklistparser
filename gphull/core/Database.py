@@ -8,6 +8,7 @@ from time import time
 from gphull.core import Exceptions
 import sqlite3
 
+APPLICATION_ID = 0x722ab81c
 class Manager:
     def __init__(self, db_path=None):
         '''
@@ -217,6 +218,17 @@ class Manager:
         if self.db_cur.fetchone() is None:
             return False
         return True
+    def change_source_interval(self, url, timeout):
+        cur = self.db_cur
+        url_tuple = (float(timeout), str(url))
+        try:
+            cur.execute('''UPDATE sources SET timeout=? WHERE url=?''', url_tuple)
+            cur.execute('''SELECT * FROM sources WHERE timout=? AND url=?''', url_tuple)
+            if self.db_cur.fetchone() is None:
+                return False
+        except sqlite3.DatabaseError:
+            raise
+        return True
 
     @staticmethod 
     def sqlite3_db_file_type(pathname):
@@ -234,11 +246,10 @@ class Manager:
             db_file.seek(68)
             # application_id is a uint32 in big endian format
             # using struct.unpack to get the value
-            application_id = unpack('>I', db_file.read(4))[0]
-            if application_id == 0x722ab81c:
+            file_id = unpack('>I', db_file.read(4))[0]
+            if file_id == APPLICATION_ID:
                 db_file.close()
                 return pathname
             else:
                 db_file.close()
                 return False
-

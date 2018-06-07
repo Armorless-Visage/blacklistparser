@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 # Liam Nolan (c) 2018 ISC
 
-from gphull.core import Parser, Exceptions, Database
+import re
 from abc import abstractmethod, ABCMeta
+from gphull.core import Parser, Exceptions, Database, Regex
 
 class Content(metaclass=ABCMeta):
-    def __init__(self, input_data, source_url):
+    def __init__(self, input_data, source_url, datatype='AUTO'):
 
         self.input_data = input_data
-        self.datatype = Parser.format_detector(self.input_data)
+        if datatype == 'AUTO':
+            self.datatype = Parser.format_detector(self.input_data)
+        else:
+            self.datatype = datatype
+
         self.parser = Parser.SHORTNAME[self.datatype](self.input_data)
         self.content = self.parser(self.input_data)
         self.source_url = source_url
@@ -79,3 +84,17 @@ class DataElement(Content):
         else:
             errmsg = 'Error adding list to database'
             raise Exceptions.ExtractorError(errmsg)
+
+class Validator:
+    @staticmethod
+    def ipv4_addr(addr):
+        if Regex.IPV4_ADDR_ONLY.match(addr):
+            return addr
+        return None
+    @staticmethod
+    def domain(name):
+        if Regex.NEWLINE_DOMAIN.match(addr):
+            return addr
+        return None
+    
+            
