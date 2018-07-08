@@ -6,16 +6,10 @@ from abc import abstractmethod, ABCMeta
 from gphull.core import Parser, Exceptions, Database, Regex
 
 class Content(metaclass=ABCMeta):
-    def __init__(self, input_data, source_url, datatype='AUTO'):
+    def __init__(self, data, source_url, datatype):
 
-        self.input_data = input_data
-        if datatype == 'AUTO':
-            self.datatype = Parser.format_detector(self.input_data)
-        else:
-            self.datatype = datatype
-
-        self.parser = Parser.SHORTNAME[self.datatype](self.input_data)
-        self.content = self.parser(self.input_data)
+        self.data = data
+        self.datatype = datatype
         self.source_url = source_url
 
         @abstractmethod
@@ -23,7 +17,7 @@ class Content(metaclass=ABCMeta):
             pass
 
 class DataList(Content):
-    def __init__(self, input_data, source_url):
+    def __init__(self):
         super()
         # for iter
         self.index = len(self.content)
@@ -60,7 +54,7 @@ class DataList(Content):
 
 
 class DataElement(Content):
-    def __init__(self, data, datatype, source_url):
+    def __init__(self):
         super()
         # check args
         if self.input_data is not str:
@@ -70,6 +64,9 @@ class DataElement(Content):
             raise Exceptions.IncorrectDataType(errmsg)
         if self.source_url is not str:
             raise TypeError('source_url must be a string)')
+        if not Validator.SHORTNAME[self.datatype](self.content):
+            raise Exceptions
+            
 
     def add_to_db(self, db_manager):
         '''
@@ -96,5 +93,9 @@ class Validator:
         if Regex.NEWLINE_DOMAIN.match(addr):
             return addr
         return None
-    
+SHORTNAME = {
+    'ipset' : Validator.ipv4_addr,
+    'newline': Validator.domain,
+    'adblock': Validator.domain }
+
             
