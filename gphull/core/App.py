@@ -72,7 +72,6 @@ class App:
             action='store'
             )
     
-    
         self.logging.add_argument(
             '-l',
             '--logpath',
@@ -101,7 +100,8 @@ class App:
         '''
         self.source_parser = self.subparser.add_parser('source')
         self.source_parser.set_defaults(func=self.action_source)
-        self.add_ex = self.source_parser.add_mutually_exclusive_group(required=True)
+        self.add_ex = self.source_parser.add_mutually_exclusive_group(
+            required=True)
         self.add_ex.add_argument(
             '-a',
             '--add',
@@ -137,7 +137,8 @@ class App:
         '''
         self.output_parser = self.subparser.add_parser('output')
         self.output_parser.set_defaults(func=self.action_output)
-        self.out_ex = self.output_parser.add_mutually_exclusive_group(required=True)
+        self.out_ex = self.output_parser.add_mutually_exclusive_group(
+            required=True)
         self.output_parser.add_argument(
             '-f',
             '--format',
