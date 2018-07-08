@@ -42,7 +42,8 @@ class App:
             prog='gphull',
             conflict_handler='resolve',
             add_help=False)
-        self.subparser = self.parent_parser.add_subparsers(dest='subparser_name')
+        self.subparser = self.parent_parser.add_subparsers(
+            dest='subparser_name')
         self.source_parser = self.subparser.add_parser('source')
         self.address_parser = self.subparser.add_parser('address')
         self.update_parser = self.subparser.add_parser('update')
@@ -155,6 +156,12 @@ class App:
             )
     
         self.args = self.parent_parser.parse_args()
+        if self.args.subparser_name is None:
+            no_action_msg = ('An action must be specified. eg. '
+                + 'gphull source --database /tmp/test.db '
+                + '--add https://example.com --timeout 3600')
+            raise self.parent_parser.error(no_action_msg)
+        # so the function can be used to get the args directly, return the parsed args
         return self.args
         
     def action_source(self):
