@@ -158,8 +158,9 @@ class App:
         self.args = self.parent_parser.parse_args()
         if self.args.subparser_name is None:
             no_action_msg = ('An action must be specified. eg. '
-                + 'gphull source --database /tmp/test.db '
-                + '--add https://example.com --timeout 3600')
+                + 'gphull --database /tmp/test.db source'
+                + '--add https://example.com --frequency 3600 '
+                + '--type \'ipset\'')
             raise self.parent_parser.error(no_action_msg)
         # so the function can be used to get the args directly, return the parsed args
         return self.args
@@ -210,9 +211,12 @@ class App:
                     self.args.format,
                     self.args.source_url)
         elif self.args.remove is not None:
-            raise self.source_parser.error('TODO implement this!!!')
+            Database.Manager.remove_element(
+                self.args.db,
+                self.args.remove,
+                self.args.source_url)
         else:
-            raise self.source_parser.error()
+            raise self.source_parser.error('either --add or --remove must be specified')
     
     def action_output(self):
         if self.args.format is None:

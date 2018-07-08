@@ -49,3 +49,7 @@ class DatabaseError(ExtractorError):
     '''
     Error with database
     '''
+class ValidatorError(ExtractorError):
+    '''
+    Error validating ip/domain
+    '''

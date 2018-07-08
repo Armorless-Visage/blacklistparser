@@ -3,3 +3,4 @@ build/
 blockparser/tests/
 __pycache__/
 *.pyc
+*.swp

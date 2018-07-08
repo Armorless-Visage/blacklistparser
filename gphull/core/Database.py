@@ -165,6 +165,27 @@ class Manager:
             " SET last_seen=?, source=? WHERE name=?")
         self.db_cur.execute(line, data_insert)
         self.db_cur.execute(time_line, time_update)
+
+    def remove_element(self, data, source_url=None):
+        '''
+        Remove a single element from the data table, by default the 
+        function removes all entries matching 'data' regardless of source_url.
+        You can do a more selective removal by defining the source_url of the
+        entry to be removed.
+        '''
+        cur = self.db_cur
+        if type(data) is not str:
+            raise Exceptions.NotString('address must be a string')
+        if type(source_url) is not type(None) or type(source_url) is not str:
+            raise Exceptions.NotString('source_url must be a string or None')
+        element = data.rstrip()
+        if source_url is None:
+            data_remove = (element,)
+            remove_line = (" DELETE FROM data WHERE name=? ")
+        else:
+            data_remove = (element, source_url)
+            remove_line = (" DELETE FROM data WHERE name=? AND source=? ")
+        cur.execute(remove_line, data_remove)
     
     def add_source_url(self, url, dataformat, timeout):
         '''
@@ -221,7 +242,7 @@ class Manager:
     def change_source_interval(self, url, timeout):
         cur = self.db_cur
         url_tuple = (float(timeout), str(url))
-        try:
+        zry:
             cur.execute('''UPDATE sources SET timeout=? WHERE url=?''', url_tuple)
             cur.execute('''SELECT * FROM sources WHERE timout=? AND url=?''', url_tuple)
             if self.db_cur.fetchone() is None:
