@@ -29,7 +29,7 @@ class App:
         self.db = Database.Manager(self.args.database)
         self.parser_action = { 
             'source': self.action_source,
-            'address': self.action_adddress,
+            'address': self.action_address,
             'update': self.action_update,
             'output': self.action_output }
         self.parser_action[self.args.subparser_name]()
@@ -87,7 +87,11 @@ class App:
             action='store_true',
             default=True)
     
-        self.parent_parser.add_argument(
+        '''
+        source subparser
+        '''
+        self.source_parser.set_defaults(func=self.action_source)
+        self.source_parser.add_argument(
             '-d',
             '--database',
             help='file path of database',
@@ -95,15 +99,9 @@ class App:
             action='store',
             required=True
             )
-    
-        '''
-        source subparser
-        '''
-        self.source_parser = self.subparser.add_parser('source')
-        self.source_parser.set_defaults(func=self.action_source)
-        self.add_ex = self.source_parser.add_mutually_exclusive_group(
+        self.source_ex = self.source_parser.add_mutually_exclusive_group(
             required=True)
-        self.add_ex.add_argument(
+        self.source_ex.add_argument(
             '-a',
             '--add',
             help='Add a source url eg. http://example.com/blacklist',
@@ -118,7 +116,7 @@ class App:
             required=True
             )
         
-        self.add_ex.add_argument(
+        self.source_ex.add_argument(
             '-r',
             '--remove',
             help='Remove a source url.',
@@ -134,10 +132,69 @@ class App:
             required=True
             )
         '''
+        address subparser
+        '''
+        self.address_parser.set_defaults(func=self.action_address)
+        self.address_parser.add_argument(
+            '-d',
+            '--database',
+            help='file path of database',
+            type=types.base_path_type,
+            action='store',
+            required=True
+            )
+        self.address_ex = self.address_parser.add_mutually_exclusive_group(
+            required=True)
+        self.address_ex.add_argument(
+            '-a',
+            '--add',
+            help='Add a source url eg. http://example.com/blacklist',
+            action='store',
+            )
+        self.address_parser.add_argument(
+            '-f',
+            '--frequency',
+            help='Frequency in seconds between updating source urls',
+            action='store',
+            type=int,
+            required=True
+            )
+        
+        self.address_ex.add_argument(
+            '-r',
+            '--remove',
+            help='Remove a source url.',
+            action='store',
+            )
+        self.address_parser.add_argument(
+            '-t',
+            '--type',
+            help='input/output format',
+            type=types.format_type,
+            action='store',
+            choices=Parser.SHORTNAME.keys(),
+            required=True
+            )
+        self.address_parser.add_argument(
+            '-s',
+            '--source',
+            help='define a url to be set as the source of the address',
+            action='store',
+            type=Parser.NewlineParser.type_helper
+            )
+        '''
         output subparser
         '''
         self.output_parser = self.subparser.add_parser('output')
         self.output_parser.set_defaults(func=self.action_output)
+        self.output_parser.add_argument(
+            '-d',
+            '--database',
+            help='file path of database',
+            type=types.base_path_type,
+            action='store',
+            required=True
+            )
         self.out_ex = self.output_parser.add_mutually_exclusive_group(
             required=True)
         self.output_parser.add_argument(
@@ -171,31 +228,42 @@ class App:
             # attempt to add a url
             logmsg = ('attempting to add source url: ' + self.args.add)
             self.logger.log.info(logmsg)
-            if (Database.Manager.test_source_url(
+            try:
+                Database.Manager.test_source_url(
                 self.db,
-                self.args.add) is True):
+                self.args.add)
                 self.logger.log.info('source url already present in database')
+                # success
                 exit(0)
+            except Exceptions.NoMatchesFound:
+                # excpected when adding a new url
+                pass
+
             Database.Manager.add_source_url(
                 self.db,
                 self.args.add,
                 self.args.type,
                 self.args.frequency)
+            # commit
             self.db.db_conn.commit()
             # check url is added
-            if (Database.Manager.test_source_url(
-                self.db,
-                self.args.add) is True):
+            try:
+                Database.Manager.test_source_url(
+                    self.db,
+                    self.args.add)
                 self.logger.log.info('source added to database OK')
+                # success
                 exit(0)
-            else:
-                self.logger.log.error('FAILED to add source url to database')
+            except Exceptions.NoMatchesFound:
+                self.logger.log.error('FAILED to add source url to database!')
+                # fail
                 exit(1)
 
         # remove a url
         # TODO confirm removal
         elif self.args.remove is not None:
-            # attempt to remove url 
+            try:
+            # attempt to remove url
             Database.Manager.delete_source_url(
                 self.db,
                 self.args.remove)
@@ -203,18 +271,18 @@ class App:
         else:
             raise self.source_parser.error()
     
-    def action_adddress(self):
+    def action_address(self):
         if self.args.add is not None:
             Database.Manager.add_element(
                     self.db,
-                    self.args.address,
-                    self.args.format,
-                    self.args.source_url)
+                    self.args.add,
+                    self.args.type,
+                    self.args.add)
         elif self.args.remove is not None:
             Database.Manager.remove_element(
                 self.args.db,
                 self.args.remove,
-                self.args.source_url)
+                self.args.source)
         else:
             raise self.source_parser.error('either --add or --remove must be specified')
     

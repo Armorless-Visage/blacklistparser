@@ -14,6 +14,14 @@ class BaseParser(metaclass=ABCMeta):
     @abstractmethod
     def extract_data(data):
         pass
+    
+    @classmethod
+    def type_helper(cls, data):
+        try:
+            cls.extract_data(data)
+        except Exceptions.NoMatchesFound:
+            return None
+        return data
 
 class ABPParser(BaseParser):
     @staticmethod
@@ -48,7 +56,7 @@ class ABPParser(BaseParser):
             return matches
         else:
             raise Exceptions.NoMatchesFound("No ABP syntax domains found.")
-
+    
 class NewlineParser(BaseParser):
     @staticmethod
     def extract_data(data):

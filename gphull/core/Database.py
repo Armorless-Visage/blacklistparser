@@ -162,7 +162,7 @@ class Manager:
         line = (" INSERT OR IGNORE INTO data" +
                 " VALUES ( ?, ?, ?, ?, ? ) ")
         time_line = (" UPDATE data" +
-            " SET last_seen=?, source=? WHERE name=?")
+            " SET last_seen=?, source_url=? WHERE name=?")
         self.db_cur.execute(line, data_insert)
         self.db_cur.execute(time_line, time_update)
 
@@ -228,8 +228,8 @@ class Manager:
             self.db_cur.execute('''UPDATE sources SET last_updated=? WHERE url=?''', t)
         except sqlite3.DatabaseError:
             raise
-            return False
         return True
+
     def test_source_url(self, url):
         url_tuple = (str(url),)
         try:
@@ -237,12 +237,13 @@ class Manager:
         except sqlite3.DatabaseError:
             raise
         if self.db_cur.fetchone() is None:
-            return False
+            raise Exceptions.NoMatchesFound('No source urls matching input found')
         return True
+
     def change_source_interval(self, url, timeout):
         cur = self.db_cur
         url_tuple = (float(timeout), str(url))
-        zry:
+        try:
             cur.execute('''UPDATE sources SET timeout=? WHERE url=?''', url_tuple)
             cur.execute('''SELECT * FROM sources WHERE timout=? AND url=?''', url_tuple)
             if self.db_cur.fetchone() is None:
