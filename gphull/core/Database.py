@@ -176,7 +176,7 @@ class Manager:
         cur = self.db_cur
         if type(data) is not str:
             raise Exceptions.NotString('address must be a string')
-        if type(source_url) is not type(None) or type(source_url) is not str:
+        if type(source_url) is not type(None) and type(source_url) is not str:
             raise Exceptions.NotString('source_url must be a string or None')
         element = data.rstrip()
         if source_url is None:

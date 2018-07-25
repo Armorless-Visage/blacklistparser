@@ -26,8 +26,8 @@ class DataList(Content):
         if self.datatype not in Parser.SHORTNAME.keys():
             errmsg = 'data type' + str(self.datatype) + 'not supported'
             raise Exceptions.IncorrectDataType(errmsg)
-        if self.source_url is not str:
-            raise TypeError('source_url must be a string)')
+        if self.source_url is not str and self.source_url is not None:
+            raise TypeError('source_url must be a string or None)')
 
     def __iter__(self):
         return self
@@ -57,15 +57,16 @@ class DataElement(Content):
     def __init__(self):
         super()
         # check args
-        if self.input_data is not str:
+        if self.data is not str:
             raise TypeError('data must be a string')
         if self.datatype not in Parser.SHORTNAME.keys():
             errmsg = 'data type' + str(self.datatype) + 'not supported'
             raise Exceptions.IncorrectDataType(errmsg)
         if self.source_url is not str:
             raise TypeError('source_url must be a string)')
-        if not Validator.SHORTNAME[self.datatype](self.content):
-            raise Exceptions
+        if not Validator.SHORTNAME[self.datatype](self.data):
+            raise Exceptions.ValidatorError('address not valid')
+        
             
 
     def add_to_db(self, db_manager):

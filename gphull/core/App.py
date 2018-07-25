@@ -195,14 +195,13 @@ class App:
             action='store',
             required=True
             )
-        self.out_ex = self.output_parser.add_mutually_exclusive_group(
-            required=True)
         self.output_parser.add_argument(
             '-f',
             '--format',
             help='input/output format',
             type=types.format_type,
             action='store'
+            required=True,
             )
         self.output_parser.add_argument(
             '-o',
@@ -210,7 +209,19 @@ class App:
             help='write to a file specified by this argument',
             type=types.base_path_type,
             action='store',
+            required=True,
             )
+        expiry_help = ('Specify an expiry in seconds. Blacklist entries older '
+                + 'than this argument will not be included.'
+        self.output_parser.add_argument(
+            '-e',
+            '--expiry',
+            help=expiry_help
+            type=int,
+            action='store',
+            )
+    
+        self.args = self.parent_parser.parse_args()
     
         self.args = self.parent_parser.parse_args()
         if self.args.subparser_name is None:
@@ -260,37 +271,68 @@ class App:
                 exit(1)
 
         # remove a url
-        # TODO confirm removal
         elif self.args.remove is not None:
+            # check url is actually in db
             try:
+                self.db.test_source_url(self.args.remove)
+            except Exceptions.NoMatchesFound:
+                msg = 'Entry does not exist in the database.'
+                self.logger.log.info(msg)
+                exit(0)
             # attempt to remove url
-            Database.Manager.delete_source_url(
-                self.db,
-                self.args.remove)
+            self.db.delete_source_url(self.args.remove)
             self.db.db_conn.commit()
+            # check removal is ok
+            try:
+                self.db.test_source_url(self.args.remove)
+                msg = 'FAILED removing source url from database!'
+                self.logger.log.error(msg)
+            except Exceptions.NoMatchesFound:
+                # success removing url
+                self.logger.log.info('Removed source url from database OK')
+            
         else:
-            raise self.source_parser.error()
+            msg = 'source action must include --add or --remove'
+            raise self.source_parser.error(msg)
     
     def action_address(self):
         if self.args.add is not None:
-            Database.Manager.add_element(
-                    self.db,
+            self.db.add_element(
                     self.args.add,
                     self.args.type,
-                    self.args.add)
+                    self.args.source)
+            self.db.db_conn.commit()
         elif self.args.remove is not None:
-            Database.Manager.remove_element(
-                self.args.db,
+            self.db.remove_element(
                 self.args.remove,
                 self.args.source)
+            self.db.db_conn.commit()
         else:
             raise self.source_parser.error('either --add or --remove must be specified')
     
     def action_output(self):
-        if self.args.format is None:
-            raise self.source_parser.error('Must specify a output --format')
-        if self.args.output is None:
-            raise self.source_parser.error('Must specify a output --file')
-#        output_list = Database.Manager.pull_names(
+        raw_list = self.db.pull_names_within_timout(self.args.expiry)
+        parsed_list = []
+        err_count = 0
+        for each in raw_list:
+            try:
+                element = Data.DataElement(
+                    each[0], # data
+                    Parser.format_detector(each[0]), # datatype
+                    None) # source_url set to None
+                parsed_list.append(element)
+            except Exceptions.ValidatorError:
+                err_count += 1  
+                self.logger.log.debug('Validator could not verify address')
+                pass
+            countmsg = (
+                'Validator counted '
+                + str(err_count) + ' invalid addresses')
+            # log how many addresses where dropped
+            self.logger.log.info(countmsg)
+        
+        
+        
+        
     def action_update(self):
         pass
