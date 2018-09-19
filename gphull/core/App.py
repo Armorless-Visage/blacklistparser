@@ -12,6 +12,8 @@ from logging.handlers import WatchedFileHandler, SysLogHandler
 from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
 from gphull.core import Database, types, Exceptions, net, Parser, Data
 from gphull.core import Logging
+from tempfile import NamedTemporaryFile
+from shutil import copyfile
 
 
 class App:
@@ -128,7 +130,7 @@ class App:
             help='input/output format',
             type=types.format_type,
             action='store',
-            choices=Parser.SHORTNAME.keys(),
+            choices=Data.VALIDATOR.keys(),
             required=True
             )
         '''
@@ -170,9 +172,8 @@ class App:
             '-t',
             '--type',
             help='input/output format',
-            type=types.format_type,
             action='store',
-            choices=Parser.SHORTNAME.keys(),
+            choices=['ip', 'domain'],
             required=True
             )
         self.address_parser.add_argument(
@@ -180,7 +181,7 @@ class App:
             '--source',
             help='define a url to be set as the source of the address',
             action='store',
-            type=Parser.NewlineParser.type_helper
+            type=Data.VALIDATOR.keys()
             )
         '''
         output subparser
@@ -200,7 +201,7 @@ class App:
             '--format',
             help='input/output format',
             type=types.format_type,
-            action='store'
+            action='store',
             required=True,
             )
         self.output_parser.add_argument(
@@ -212,13 +213,14 @@ class App:
             required=True,
             )
         expiry_help = ('Specify an expiry in seconds. Blacklist entries older '
-                + 'than this argument will not be included.'
+                + 'than this argument will not be included.')
         self.output_parser.add_argument(
             '-e',
             '--expiry',
-            help=expiry_help
+            help=expiry_help,
             type=int,
             action='store',
+            required=True
             )
     
         self.args = self.parent_parser.parse_args()
@@ -311,28 +313,42 @@ class App:
             raise self.source_parser.error('either --add or --remove must be specified')
     
     def action_output(self):
-        raw_list = self.db.pull_names_within_timout(self.args.expiry)
-        parsed_list = []
-        err_count = 0
-        for each in raw_list:
-            try:
-                element = Data.DataElement(
-                    each[0], # data
-                    Parser.format_detector(each[0]), # datatype
-                    None) # source_url set to None
-                parsed_list.append(element)
-            except Exceptions.ValidatorError:
-                err_count += 1  
-                self.logger.log.debug('Validator could not verify address')
-                pass
-            countmsg = (
-                'Validator counted '
-                + str(err_count) + ' invalid addresses')
-            # log how many addresses where dropped
-            self.logger.log.info(countmsg)
+        err = 0 # invalid lines
+        valid = 0 # valid lines
+        output = []
+        results = self.db.pull_names_2(self.args.expiry, self.args.format)
+        for result in results:
+            if Data.VALIDATOR[self.datatype](result):
+                valid += 1
+                output.append(result)        
+            else:
+                err += 1
+        ## LOG
+        icountmsg = ('Counted ' + str(err) + ' invalid addresses')
+        # log how many addresses where dropped
+        self.logger.log.info(icountmsg)
+        countmsg = ('Counted ' + str(valid) + ' valid addresses')
+        # log how many addresses are valid
+        self.logger.log.info(countmsg)
+      
+        if len(output) < 1:
+            self.logger.log.error('No addresses found. Exiting.')
+            exit(1)
+
+        # format the page
+        Data.FORMAT[self.datatype](
+ 
+        tmp = NamedTemporaryFile('w+b', delete=False)
         
-        
-        
+        for each in output:
+            tmp.write(each.data)
+        tmp.close()
+        try:
+            copyfile(tmp.name, self.args.output)
+        except:
+            self.logger.log.error('FAILED copying tmpfile to destination')
+            raise
+        exit(0)        
         
     def action_update(self):
         pass
