@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Liam Nolan (c) 2018
+# Liam Nolan (c) 2018 ISC
 
 from sys import stderr, exit
 from os import urandom, path
@@ -8,7 +8,9 @@ from time import time
 from gphull.core import Exceptions
 import sqlite3
 
+# SQLITE3 Application ID
 APPLICATION_ID = 0x722ab81c
+
 class Manager:
     def __init__(self, db_path=None):
         '''
@@ -89,10 +91,10 @@ class Manager:
         cur = self.db_cur
         self.db_cur.execute(line)
         return cur.fetchall()
-    def pull_names_2(self, timeout, group):
-        join = (timeout, time())
-        line = ('SELECT name from data WHERE (last_seen + ? >= ?) AND (group = ?)')
-        
+    def pull_names_2(self, timeout, data_format):
+        line = ('SELECT name FROM data WHERE (last_seen + ? >= ?) AND (data_format = ?)')
+        self.db_cur.execute(line, (timeout, time(), data_format))
+        return self.db_cur.fetchall()
     
     def pull_active_source_urls(self):
         '''
@@ -254,6 +256,10 @@ class Manager:
 
     @staticmethod 
     def sqlite3_db_file_type(pathname):
+        '''
+        Return pathname if the path has a valid sqlite3 header.
+        Otherwise returns false.
+        '''
         with open(pathname, 'rb') as db_file:                         
             header = db_file.read(16)                                 
             if header == b'SQLite format 3\x00':                      
@@ -264,6 +270,10 @@ class Manager:
                 return False
     @staticmethod
     def sqlite3_db_application_id(pathname):
+        '''
+        Return pathname if the path has the correct application id
+        at byte 68 in the file. Otherwise returns False.
+        '''
         with open(pathname, 'rb') as db_file:
             db_file.seek(68)
             # application_id is a uint32 in big endian format
