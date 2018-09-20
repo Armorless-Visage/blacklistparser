@@ -5,7 +5,7 @@
 
 from os import path
 from sqlite3 import Cursor
-from gphull.core import Parser
+from gphull.core import Data
 
 
 '''
@@ -67,11 +67,12 @@ def log_level_type(level):
 def format_type(string):
     '''
     returns input if the input string matches
-    a supported data type
+    a supported data type OLD
     '''
-    if string in Parser.SHORTNAME.keys():
+    if string in list(Data.VALIDATOR)[0]:
         return string
     return None
+    
 def frequency_range(integer):
     '''
     type for argparse returns true for a positive integer

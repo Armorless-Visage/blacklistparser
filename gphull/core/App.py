@@ -14,6 +14,7 @@ from gphull.core import Database, types, Exceptions, net, Parser, Data
 from gphull.core import Logging
 from tempfile import NamedTemporaryFile
 from shutil import copyfile
+from tempfile import mkstemp
 
 
 class App:
@@ -130,7 +131,7 @@ class App:
             help='input/output format',
             type=types.format_type,
             action='store',
-            choices=Data.VALIDATOR.keys(),
+            choices=list(Data.VALIDATOR)[0],
             required=True
             )
         '''
@@ -181,7 +182,7 @@ class App:
             '--source',
             help='define a url to be set as the source of the address',
             action='store',
-            type=Data.VALIDATOR.keys()
+            type=types.format_type
             )
         '''
         output subparser
@@ -233,6 +234,15 @@ class App:
                 + '--type \'ipset\'')
             raise self.parent_parser.error(no_action_msg)
         # so the function can be used to get the args directly, return the parsed args
+        # FIXME lame hack
+        ipf = ['ipset']
+        dof = ['newline', 'adblock']
+        if self.args.format in ipf:
+            self.base_type = 'ip'
+        elif self.args.format in dof:
+            self.base_type = 'domain'
+        else:
+            raise Exceptions.IncorrectDataType('FIXME THIS SHOULDN\'t OCCUR')
         return self.args
         
     def action_source(self):
@@ -310,17 +320,18 @@ class App:
                 self.args.source)
             self.db.db_conn.commit()
         else:
-            raise self.source_parser.error('either --add or --remove must be specified')
+            sperr = 'either --add or --remove must be specified'
+            raise self.source_parser.error(sperr)
     
     def action_output(self):
         err = 0 # invalid lines
         valid = 0 # valid lines
-        output = []
-        results = self.db.pull_names_2(self.args.expiry, self.args.format)
+        pending = []
+        results = self.db.pull_names_2(self.args.expiry, self.base_type)
         for result in results:
-            if Data.VALIDATOR[self.datatype](result):
+            if Data.VALIDATOR[self.args.format](result):
                 valid += 1
-                output.append(result)        
+                pending.append(result)        
             else:
                 err += 1
         ## LOG
@@ -331,23 +342,20 @@ class App:
         # log how many addresses are valid
         self.logger.log.info(countmsg)
       
-        if len(output) < 1:
+        if len(pending) < 1:
             self.logger.log.error('No addresses found. Exiting.')
             exit(1)
 
         # format the page
-        Data.FORMAT[self.datatype](
+        output = Data.FORMAT[self.datatype](pending)
  
-        tmp = NamedTemporaryFile('w+b', delete=False)
-        
-        for each in output:
-            tmp.write(each.data)
-        tmp.close()
-        try:
-            copyfile(tmp.name, self.args.output)
-        except:
-            self.logger.log.error('FAILED copying tmpfile to destination')
-            raise
+        with mkstemp('w+b', prefix="blparser", suffix=".tmp") as tmpf:
+            try:
+                tmpf.write(output.read())
+                copyfile(tmpf, self.args.output)
+            except:
+                self.logger.log.error('FAILED copying tmpfile to destination')
+                raise
         exit(0)        
         
     def action_update(self):

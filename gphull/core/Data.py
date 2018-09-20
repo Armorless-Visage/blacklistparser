@@ -7,7 +7,7 @@ from abc import abstractmethod, ABCMeta
 from gphull.core import Parser, Exceptions, Database, Regex
 
 class Content(metaclass=ABCMeta):
-    def __init__(self, data, source_url, datatype, db)
+    def __init__(self, data, source_url, datatype, db):
 
         self.data = data
         self.datatype = datatype
@@ -90,16 +90,24 @@ class DataElement(Content):
             raise Exceptions.ExtractorError(errmsg)
 
 class Format:
-    def __init__(self, data):
-        self.data = data
-
-    def newline(datatype):
+    @staticmethod
+    def newline(data):
         # return a StringIO file with one address per line
         # easy no boiler to add
         with StringIO() as mfile:
             for each in self.data:
                 # validate before add (silent drops invalid)
-                if VALIDATOR[self.datatype](each):
+                if VALIDATOR['newline'](each):
+                    mfile.write(each)
+        return mfile
+    @staticmethod
+    def ipset(data):
+        # return a StringIO file with one address per line
+        # easy no boiler to add
+        with StringIO() as mfile:
+            for each in self.data:
+                # validate before add (silent drops invalid)
+                if VALIDATOR['ipset'](each):
                     mfile.write(each)
         return mfile
 
@@ -117,10 +125,10 @@ class Validator:
 
 VALIDATOR = {
     'ipset' : Validator.ipv4_addr,
-    'newline': Validator.domain,
-    'adblock': Validator.domain }
+    'newline' : Validator.domain,
+    'adblock' : Validator.domain }
 FORMAT = {
-        'ipset' : Format.newline,
+        'ipset' : Format.ipset,
         'newline' : Format.newline }
 
             
