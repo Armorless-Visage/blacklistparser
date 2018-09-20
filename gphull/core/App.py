@@ -13,8 +13,7 @@ from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
 from gphull.core import Database, types, Exceptions, net, Parser, Data
 from gphull.core import Logging
 from tempfile import NamedTemporaryFile
-from shutil import copyfile
-from tempfile import mkstemp
+from shutil import copy
 
 
 class App:
@@ -28,7 +27,7 @@ class App:
             self.args.quiet,
             self.args.syslog,
             self.args.logpath)
-        self.logger.log.info('initalizing database')
+        self.logger.log.info('Initalizing database')
         self.db = Database.Manager(self.args.database)
         self.parser_action = { 
             'source': self.action_source,
@@ -235,14 +234,15 @@ class App:
             raise self.parent_parser.error(no_action_msg)
         # so the function can be used to get the args directly, return the parsed args
         # FIXME lame hack
-        ipf = ['ipset']
-        dof = ['newline', 'adblock']
-        if self.args.format in ipf:
-            self.base_type = 'ip'
-        elif self.args.format in dof:
-            self.base_type = 'domain'
-        else:
-            raise Exceptions.IncorrectDataType('FIXME THIS SHOULDN\'t OCCUR')
+        if self.args.subparser_name == 'output':
+            ipf = ['ipset']
+            dof = ['newline', 'adblock']
+            if self.args.format in ipf:
+                self.base_type = 'ip'
+            elif self.args.format in dof:
+                self.base_type = 'domain'
+            else:
+                raise Exceptions.IncorrectDataType('FIXME THIS SHOULDN\'t OCCUR')
         return self.args
         
     def action_source(self):
@@ -324,17 +324,21 @@ class App:
             raise self.source_parser.error(sperr)
     
     def action_output(self):
+        '''
+        Validate everything from the db then format and finally write output
+        '''
+        self.logger.log.info('Started output module')
         err = 0 # invalid lines
         valid = 0 # valid lines
-        pending = []
         results = self.db.pull_names_2(self.args.expiry, self.base_type)
+        pending = []
         for result in results:
-            if Data.VALIDATOR[self.args.format](result):
+            if Data.VALIDATOR[self.args.format](result[0]):
                 valid += 1
-                pending.append(result)        
+                pending.append(result[0])
             else:
                 err += 1
-        ## LOG
+        ## LOG errors and valid counts
         icountmsg = ('Counted ' + str(err) + ' invalid addresses')
         # log how many addresses where dropped
         self.logger.log.info(icountmsg)
@@ -342,20 +346,22 @@ class App:
         # log how many addresses are valid
         self.logger.log.info(countmsg)
       
+        
         if len(pending) < 1:
             self.logger.log.error('No addresses found. Exiting.')
             exit(1)
 
         # format the page
-        output = Data.FORMAT[self.datatype](pending)
- 
-        with mkstemp('w+b', prefix="blparser", suffix=".tmp") as tmpf:
-            try:
-                tmpf.write(output.read())
-                copyfile(tmpf, self.args.output)
-            except:
-                self.logger.log.error('FAILED copying tmpfile to destination')
-                raise
+        output = Data.FORMAT[self.args.format](pending)
+        if not output:
+            self.logger.log.error('Nothing to output, exiting non-zero')
+            exit(1)
+        max_spool = 64000000 # 64MB
+        with NamedTemporaryFile(mode='w+', delete=True) as tmp:
+            tmp.write(output)
+            tmp.flush()
+            copy(tmp.name, self.args.output)
+            self.logger.log.info('Wrote to ' + str(self.args.output))
         exit(0)        
         
     def action_update(self):

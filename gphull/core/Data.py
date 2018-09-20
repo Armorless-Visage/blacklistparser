@@ -2,7 +2,7 @@
 # Liam Nolan (c) 2018 ISC
 
 import re
-from io import StringIO
+from io import BytesIO
 from abc import abstractmethod, ABCMeta
 from gphull.core import Parser, Exceptions, Database, Regex
 
@@ -90,26 +90,19 @@ class DataElement(Content):
             raise Exceptions.ExtractorError(errmsg)
 
 class Format:
+    '''
+    produce lists of data to write to a file, inserts
+    formatting and header footers as required by the format
+    NOTE: Validate elsewhere
+    '''
     @staticmethod
     def newline(data):
-        # return a StringIO file with one address per line
-        # easy no boiler to add
-        with StringIO() as mfile:
-            for each in self.data:
-                # validate before add (silent drops invalid)
-                if VALIDATOR['newline'](each):
-                    mfile.write(each)
-        return mfile
-    @staticmethod
-    def ipset(data):
-        # return a StringIO file with one address per line
-        # easy no boiler to add
-        with StringIO() as mfile:
-            for each in self.data:
-                # validate before add (silent drops invalid)
-                if VALIDATOR['ipset'](each):
-                    mfile.write(each)
-        return mfile
+        '''
+        easy just return the data with newlines no formatting required
+        '''
+        sep = '\n'
+        output = sep.join(data)
+        return output
 
 class Validator:
     @staticmethod
@@ -128,7 +121,7 @@ VALIDATOR = {
     'newline' : Validator.domain,
     'adblock' : Validator.domain }
 FORMAT = {
-        'ipset' : Format.ipset,
+        'ipset' : Format.newline,
         'newline' : Format.newline }
 
             
