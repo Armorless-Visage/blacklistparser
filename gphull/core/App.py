@@ -10,7 +10,7 @@ from argparse import FileType
 from logging import getLogger, StreamHandler, Formatter
 from logging.handlers import WatchedFileHandler, SysLogHandler
 from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
-from gphull.core import Database, types, Exceptions, net, Parser, Data
+from gphull.core import Database, types, Exceptions, Net, Parser, Data
 from gphull.core import Logging
 from tempfile import NamedTemporaryFile
 from shutil import copy

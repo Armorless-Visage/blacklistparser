@@ -46,7 +46,8 @@ class Manager:
                 "url TEXT UNIQUE, " +
                 "page_format TEXT, " +
                 "timeout REAL, " +
-                "last_updated REAL )")
+                "last_updated REAL, " +
+                "last_modified_head REAL )")
         data_table = ("CREATE TABLE IF NOT EXISTS data ( " +
                 "name TEXT, " +
                 "data_format TEXT, " + 
@@ -204,10 +205,10 @@ class Manager:
         cur = self.db_cur
         # url, source page format, page update timeout,
         # last_updated set to 61sec after epoch (never)
-        t = ( str(url), str(dataformat), float(timeout), float(61) )
+        t = ( str(url), str(dataformat), float(timeout), float(61), None )
         
         try:
-            self.db_cur.execute('''INSERT OR IGNORE INTO sources VALUES ( ?, ?, ?, ? )''', t)
+            self.db_cur.execute('''INSERT OR IGNORE INTO sources VALUES ( ?, ?, ?, ?, ? )''', t)
         except sqlite3.DatabaseError:
             raise
         return True

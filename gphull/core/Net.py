@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
-# (c) Liam Nolan 2016
-# BSD 2-Clause
+# Liam Nolan 2018 (c) ISC
 # Full licence terms located in LICENCE file
 
  
@@ -9,17 +8,19 @@ from urllib.request import ProxyHandler, build_opener
 from urllib.error import URLError
 from gphull.core import Exceptions
 
-def get_webpage(url, proxy=False, fake_user_agent=True):
+def get_webpage(url, proxy=False, fake_user_agent=True, last_modified=None):
     '''
     - open a webpage and return the result using urllib2
     - use proxy=True to let urllib2 detect system proxy
     - fake_user_agent is on by default because some blacklists reject
       urllib user agents (spoofs a windows/ff ua)
+    - last_modified should be exact string returned in server header
+      for Last-Modified header
     '''
     # if proxy is set establish proxy handler
     # NOTE: python3 docs say urllib looks for proxy anyway
     # so this may still proxy even if proxy is set to False
-    if proxy is True:
+    if proxy:
         proxy = ProxyHandler()
         opener = build_opener(proxy)
     else:
@@ -27,18 +28,25 @@ def get_webpage(url, proxy=False, fake_user_agent=True):
     
     # spoof the user agent
     # TODO: add more user agents
-    agent = "Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20100101 Firefox/13.0.1)"
-    if fake_user_agent is True:
-        opener.addheaders = [('User-Agent', agent)]
+    agent = "Mozilla/5.0 (Windows NT 6.2; rv:10.0) Gecko/20100101 Firefox/33.0)"
+    headers = []
+    if fake_user_agent:
+        headers.append(('User-Agent', agent))
+    if last_mofified:
+        headers.append(('If-Modified-Since', last_modified))
+
+    opener.addheaders = headers
     
     # try and get the webpage
     try:
         page = opener.open(url)
-    except URLError:
+    except URLError as ue:
+        if ue.code == 304:
+            raise Exceptions.NotModified
         raise
 
     # check the page is something
-    if page is None:
+    if not page:
         raise Exceptions.NetError('Unknown problem opening webpage')
     # return the result
     return page

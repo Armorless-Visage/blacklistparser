@@ -53,3 +53,7 @@ class ValidatorError(ExtractorError):
     '''
     Error validating ip/domain
     '''
+class NotModified(ExtractorError):
+    '''
+    HTTP Code 403 Not-Modified-Since
+    '''
