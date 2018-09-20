@@ -103,13 +103,13 @@ class Manager:
         '''
         ctime = (time(),)
         cur = self.db_cur
-        self.db_cur.execute('''SELECT url FROM sources WHERE ? >= last_updated + timeout''', ctime)
+        self.db_cur.execute('''SELECT url, last_modified_head FROM sources WHERE ? >= last_updated + timeout''', ctime)
         # any invalid urls found increment this
         errcnt = 0
         urls = []
         for url_result in cur.fetchall():
             if url_result[0] is not None:
-                urls.append(url_result[0])
+                urls.append(url_result)
             else:
                 errcnt += 1
         if len(urls) > 0:

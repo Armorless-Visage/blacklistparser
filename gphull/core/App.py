@@ -341,10 +341,10 @@ class App:
         ## LOG errors and valid counts
         icountmsg = ('Counted ' + str(err) + ' invalid addresses')
         # log how many addresses where dropped
-        self.logger.log.info(icountmsg)
+        self.logger.log.debug(icountmsg)
         countmsg = ('Counted ' + str(valid) + ' valid addresses')
         # log how many addresses are valid
-        self.logger.log.info(countmsg)
+        self.logger.log.debug(countmsg)
       
         
         if len(pending) < 1:
@@ -365,4 +365,14 @@ class App:
         exit(0)        
         
     def action_update(self):
-        pass
+        self.logger.log.info('Started update module')
+        # this will contain a tuple of url, last_modified
+        # the last_modified header will be None or a Last-Modified HTTP header
+        to_be_updated = self.db.pull_active_source_urls()
+        for entry in to_be_updated:
+            page = Net.get_webpage(url=entry[0], last_modified=entry[1])
+        for line in page:
+            
+        
+        
+        
