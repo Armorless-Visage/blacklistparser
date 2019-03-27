@@ -103,13 +103,17 @@ class Manager:
         '''
         ctime = (time(),)
         cur = self.db_cur
-        self.db_cur.execute('''SELECT url, last_modified_head FROM sources WHERE ? >= last_updated + timeout''', ctime)
+        self.db_cur.execute('''SELECT url, page_format, last_modified_head FROM sources WHERE ? >= last_updated + timeout''', ctime)
         # any invalid urls found increment this
         errcnt = 0
         urls = []
         for url_result in cur.fetchall():
-            if url_result[0] is not None:
-                urls.append(url_result)
+            if url_result:
+                result = { 
+                    'url' : url_result[0],
+                    'page_format' : url_result[1],
+                    'last_modified' : url_result[1] }
+                urls.append(result)
             else:
                 errcnt += 1
         if len(urls) > 0:
@@ -139,13 +143,17 @@ class Manager:
             data_insert.append((data, data_type, current_time, current_time, source_url))
             time_update.append((current_time, data, source_url))
         
+        #NOTE: this code above only writes the last url w/ addr to source
         iline = (" INSERT OR IGNORE INTO data" +
                 " VALUES ( ?, ?, ?, ?, ? )")
-        self.db_cur.executemany(iline, data_insert)
         tline = (" UPDATE data" + 
                 " SET last_seen=? WHERE name=? AND source_url=?")
-        self.db_cur.executemany(tline, time_update)
-        #NOTE: this code above only writes the last url w/ addr to source
+        try: 
+            self.db_cur.executemany(iline, data_insert)
+            self.db_cur.executemany(tline, time_update)
+        except:
+            raise
+        
         return True
     
     def add_element(self, data, data_type, source_url):

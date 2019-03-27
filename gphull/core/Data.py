@@ -6,6 +6,49 @@ from io import BytesIO
 from abc import abstractmethod, ABCMeta
 from gphull.core import Parser, Exceptions, Database, Regex
 
+
+class IPList:
+    def __init__(self, data, raise_errors=False, source=None):
+        self.data = []
+        self.datatype = 'ipset'
+        self.index = -1 # start index at -1 b/c it is inc before return
+        self.source_url = source
+        inputlen = len(data)
+        for line in data:
+            stringified = str(line)
+            if not VALIDATOR[self.datatype](stringified, printerr=False):
+                # if raise_errors is true throw an exception
+                if raise_errors:
+                    errmsg = ("Not a valid " + self.datatype + " address")
+                    raise Exceptions.ValidatorError(errmsg)
+            else:
+                self.data.append(stringified)
+            
+    def __iter__(self):
+        return self
+    def __next__(self):
+        if self.index > len(self.data):
+            raise StopIteration 
+        self.index += 1
+        return self.data[self.index]
+    
+    def add_to_db(self, db_manager):
+        '''
+        add this list to a databaseb via db connection
+        '''
+        # re-validate before entering into db
+        if Database.Manager.bulk_add(
+                db_manager,
+                self.data,
+                self.datatype,
+                self.source_url) is True:
+            pass
+        else:
+            errmsg = 'Error adding list to database'
+            #raise Exceptions.ExtractorError(errmsg)
+            raise
+
+
 class Content(metaclass=ABCMeta):
     def __init__(self, data, source_url, datatype, db):
 
@@ -106,9 +149,12 @@ class Format:
 
 class Validator:
     @staticmethod
-    def ipv4_addr(addr):
-        if Regex.IPV4_ADDR_ONLY.match(addr):
+    def ipv4_addr(addr, printerr=False):
+        if Regex.IPV4_ADDR.match(addr):
             return addr
+        else:
+            if printerr:
+                print(addr)
         return None
     @staticmethod
     def domain(name):

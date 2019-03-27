@@ -32,7 +32,7 @@ def get_webpage(url, proxy=False, fake_user_agent=True, last_modified=None):
     headers = []
     if fake_user_agent:
         headers.append(('User-Agent', agent))
-    if last_mofified:
+    if last_modified:
         headers.append(('If-Modified-Since', last_modified))
 
     opener.addheaders = headers

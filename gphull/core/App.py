@@ -14,6 +14,7 @@ from gphull.core import Database, types, Exceptions, Net, Parser, Data
 from gphull.core import Logging
 from tempfile import NamedTemporaryFile
 from shutil import copy
+from urllib import error
 
 
 class App:
@@ -222,6 +223,19 @@ class App:
             action='store',
             required=True
             )
+        '''
+        update subparser
+        '''
+        self.update_parser = self.subparser.add_parser('update')
+        self.update_parser.set_defaults(func=self.action_update)
+        self.update_parser.add_argument(
+            '-d',
+            '--database',
+            help='file path of database',
+            type=types.base_path_type,
+            action='store',
+            required=True
+            )
     
         self.args = self.parent_parser.parse_args()
     
@@ -356,7 +370,7 @@ class App:
         if not output:
             self.logger.log.error('Nothing to output, exiting non-zero')
             exit(1)
-        max_spool = 64000000 # 64MB
+        
         with NamedTemporaryFile(mode='w+', delete=True) as tmp:
             tmp.write(output)
             tmp.flush()
@@ -367,12 +381,48 @@ class App:
     def action_update(self):
         self.logger.log.info('Started update module')
         # this will contain a tuple of url, last_modified
-        # the last_modified header will be None or a Last-Modified HTTP header
+        # the last_modified header will be None or a Last-Modified HTTP headerA
         to_be_updated = self.db.pull_active_source_urls()
-        for entry in to_be_updated:
-            page = Net.get_webpage(url=entry[0], last_modified=entry[1])
-        for line in page:
-            
-        
-        
-        
+        retr = []
+        lists = []
+        db = Database.Manager(self.args.database)
+
+        # GET THE WEBPAGES
+        self.logger.log.info('Started retrieving webpages')
+        for entry in to_be_updated: # get the webpages
+            try:
+                response = Net.get_webpage(
+                    url=entry['url'],
+                    last_modified=entry['last_modified'])
+                result = {
+                    'web_response' : response,
+                    'source_config' : entry }
+                retr.append(result)
+            except error.HTTPError:
+                pass
+                
+        # PROCESS AND ADD TO DB
+        self.logger.log.info('Processing webpages')
+        for result in retr:
+            try:
+                page = result['web_response'].read().decode('utf-8')
+            except:
+                self.logger.log.debug('Webpage failed to decode into utf-8')
+                page = result['web_response'].read()
+           
+            lines = page.splitlines() 
+            self.logger.log.debug(str(len(page)) + ' lines in page.')
+            self.logger.log.debug(str(result['web_response'].info()))
+            processed_data = Data.IPList(lines, source=result['web_response'].geturl()) # TODO OTHER TYPES!
+            try:
+                processed_data.add_to_db(self.db)
+                self.logger.log.debug('Added uncommitted content to db')
+            except Exceptions.ExtractorError:
+                self.logger.log.error('Failed to add content to db')
+                raise
+        try:
+            self.db.db_conn.commit()
+            self.logger.log.debug('Commit to sqlite3 db success')
+        except:
+            self.logger.log.debug('Commit to sqlite3 db FAILED')
+            raise
