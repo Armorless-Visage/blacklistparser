@@ -2,7 +2,6 @@
 # Liam Nolan (c) 2018 ISC
 
 import re
-from io import BytesIO
 from abc import abstractmethod, ABCMeta
 from gphull.core import Parser, Exceptions, Database, Regex
 
@@ -13,7 +12,6 @@ class IPList:
         self.datatype = 'ipset'
         self.index = -1 # start index at -1 b/c it is inc before return
         self.source_url = source
-        inputlen = len(data)
         for line in data:
             stringified = str(line)
             if not VALIDATOR[self.datatype](stringified, printerr=False):
@@ -103,34 +101,6 @@ class DataList(Content):
             errmsg = 'Error adding list to database'
             raise Exceptions.ExtractorError(errmsg)
         return True
-
-class DataElement(Content):
-    def __init__(self):
-        super()
-        # check args
-        if self.data is not str:
-            raise TypeError('data must be a string')
-        if self.datatype not in Parser.VALIDATOR.keys():
-            errmsg = 'data type' + str(self.datatype) + 'not supported'
-            raise Exceptions.IncorrectDataType(errmsg)
-        if self.source_url is not str:
-            raise TypeError('source_url must be a string)')
-        if not Validator.VALIDATOR[self.datatype](self.data):
-            raise Exceptions.ValidatorError('address not valid')
-
-    def add_to_db(self, db_manager):
-        '''
-        add this list to a databaseb via db connection
-        '''
-        if Database.Manager.add_element(
-                db_manager,
-                self.data,
-                self.datatype,
-                self.source_url) is True:
-            pass
-        else:
-            errmsg = 'Error adding list to database'
-            raise Exceptions.ExtractorError(errmsg)
 
 class Format:
     '''

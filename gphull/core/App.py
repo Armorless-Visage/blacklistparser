@@ -5,8 +5,6 @@
 # Full licence terms located in LICENCE file
 
 from argparse import ArgumentParser
-from argparse import ArgumentError
-from argparse import FileType
 from logging import getLogger, StreamHandler, Formatter
 from logging.handlers import WatchedFileHandler, SysLogHandler
 from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
@@ -393,7 +391,6 @@ class App:
         # the last_modified header will be None or a Last-Modified HTTP header
         to_be_updated = self.db.pull_active_source_urls()
         retr = []
-        lists = []
         db = Database.Manager(self.args.database)
 
         # GET THE WEBPAGES

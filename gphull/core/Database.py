@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # Liam Nolan (c) 2018 ISC
 
-from sys import stderr, exit
-from os import urandom, path
+from sys import exit
+from os import path
 from struct import unpack
 from time import time
 from gphull.core import Exceptions
@@ -72,26 +72,6 @@ class Manager:
         except sqlite3.DatabaseError:
             raise
         
-    def pull_names(self):
-        '''
-        returns a list of tuples of elements name, rowid from the input table
-        select arg is passed as where=? to sqlite3
-        '''
-        line = (" SELECT name, rowid FROM data ")
-        cur = self.db_cur
-        self.db_cur.execute(line)
-        return cur.fetchall()
-    
-    def pull_names_within_timout(self, timeout):
-        '''
-        returns a list of tuples of elements name, rowid from the input table
-        select arg is passed as where=? to sqlite3
-        '''
-        join = (timeout, time())
-        line = (' SELECT name FROM data WHERE last_seen + ? >= ? ')
-        cur = self.db_cur
-        self.db_cur.execute(line)
-        return cur.fetchall()
     def pull_names_2(self, timeout, data_format):
         line = ('SELECT name FROM data WHERE (last_seen + ? >= ?) AND (data_format = ?)')
         self.db_cur.execute(line, (timeout, time(), data_format))

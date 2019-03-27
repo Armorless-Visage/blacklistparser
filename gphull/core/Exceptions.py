@@ -12,18 +12,9 @@ class NotString(ExtractorError):
     Value is not a string
     '''
     pass
-class NotMatch(ExtractorError):
-    '''
-    String does not match regex patten
-    '''
-    pass
 class NoMatchesFound(ExtractorError):
     '''
     No matches found inside data
-    '''
-class NoDomainsFound(ExtractorError):
-    '''
-    No domains found inside data
     '''
 class IncorrectDataType(ExtractorError):
     '''
@@ -52,8 +43,4 @@ class DatabaseError(ExtractorError):
 class ValidatorError(ExtractorError):
     '''
     Error validating ip/domain
-    '''
-class NotModified(ExtractorError):
-    '''
-    HTTP Code 403 Not-Modified-Since
     '''
