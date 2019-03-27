@@ -112,7 +112,7 @@ class Manager:
                 result = { 
                     'url' : url_result[0],
                     'page_format' : url_result[1],
-                    'last_modified' : url_result[1] }
+                    'last_modified' : url_result[2] }
                 urls.append(result)
             else:
                 errcnt += 1
@@ -121,6 +121,14 @@ class Manager:
         else:
             errmsg = ('All urls on cooldown or none in database. Invalid urls found in db: ' + str(errcnt))
             raise Exceptions.NoMatchesFound(errmsg)
+
+    def update_last_modified(self, url, last_modified):
+        '''
+        change the last-modified date for url
+        '''
+        cur = self.db_cur
+        self.db_cur.execute('''UPDATE sources SET last_modified_head=? WHERE url=?''', (last_modified, url))
+        
         
     def bulk_add(self, data_lst, data_type, source_url):
         '''

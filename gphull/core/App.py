@@ -248,12 +248,19 @@ class App:
             raise self.parent_parser.error(no_action_msg)
         # so the function can be used to get the args directly, return the parsed args
         # FIXME lame hack
+        ipf = ['ipset']
+        dof = ['newline', 'adblock']
         if self.args.subparser_name == 'output':
-            ipf = ['ipset']
-            dof = ['newline', 'adblock']
             if self.args.format in ipf:
                 self.base_type = 'ip'
             elif self.args.format in dof:
+                self.base_type = 'domain'
+            else:
+                raise Exceptions.IncorrectDataType('FIXME THIS SHOULDN\'t OCCUR')
+        if self.args.subparser_name == 'source':
+            if self.args.type in ipf:
+                self.base_type = 'ip'
+            elif self.args.type in dof:
                 self.base_type = 'domain'
             else:
                 raise Exceptions.IncorrectDataType('FIXME THIS SHOULDN\'t OCCUR')
@@ -279,7 +286,7 @@ class App:
             Database.Manager.add_source_url(
                 self.db,
                 self.args.add,
-                self.args.type,
+                self.base_type,
                 self.args.frequency)
             # commit
             self.db.db_conn.commit()
@@ -345,6 +352,8 @@ class App:
         err = 0 # invalid lines
         valid = 0 # valid lines
         results = self.db.pull_names_2(self.args.expiry, self.base_type)
+        if not results:
+            raise Exceptions.DatabaseError('No results from db found')
         pending = []
         for result in results:
             if Data.VALIDATOR[self.args.format](result[0]):
@@ -381,7 +390,7 @@ class App:
     def action_update(self):
         self.logger.log.info('Started update module')
         # this will contain a tuple of url, last_modified
-        # the last_modified header will be None or a Last-Modified HTTP headerA
+        # the last_modified header will be None or a Last-Modified HTTP header
         to_be_updated = self.db.pull_active_source_urls()
         retr = []
         lists = []
@@ -390,6 +399,7 @@ class App:
         # GET THE WEBPAGES
         self.logger.log.info('Started retrieving webpages')
         for entry in to_be_updated: # get the webpages
+            self.logger.log.info('URL last updated ' + str(entry['last_modified']))
             try:
                 response = Net.get_webpage(
                     url=entry['url'],
@@ -398,10 +408,18 @@ class App:
                     'web_response' : response,
                     'source_config' : entry }
                 retr.append(result)
-            except error.HTTPError:
-                pass
+            except error.HTTPError as ue:
+                if ue.code == 404:
+                    self.logger.log.error('404 Error ' + str(entry['url']))
+                    pass
+                elif ue.code == 304:
+                    self.logger.log.info('Not Modified ' + str(entry['url']))
+                    pass
+                else:
+                    self.logger.error(str(ue.code) + ' Error ' + str(entry['url']))
+        
                 
-        # PROCESS AND ADD TO DB
+        # Process webpages into data
         self.logger.log.info('Processing webpages')
         for result in retr:
             try:
@@ -413,13 +431,25 @@ class App:
             lines = page.splitlines() 
             self.logger.log.debug(str(len(page)) + ' lines in page.')
             self.logger.log.debug(str(result['web_response'].info()))
+            # IPList will only put validated data into self.data and can be used safely
             processed_data = Data.IPList(lines, source=result['web_response'].geturl()) # TODO OTHER TYPES!
+            # Add data to DB
             try:
                 processed_data.add_to_db(self.db)
                 self.logger.log.debug('Added uncommitted content to db')
             except Exceptions.ExtractorError:
                 self.logger.log.error('Failed to add content to db')
                 raise
+            # Update Last-Modified into DB
+            try:
+                wurl = result['web_response'].geturl()
+                lmod = result['web_response'].info()['Last-Modified']
+                self.db.update_last_modified(wurl, lmod)
+                self.logger.log.debug('Last-Modified updated for ' + str(wurl) + ' to ' + str(lmod))
+            except:
+                self.logger.log.error('Failed to update Last-Modified')
+                pass
+        # COMMIT        
         try:
             self.db.db_conn.commit()
             self.logger.log.debug('Commit to sqlite3 db success')

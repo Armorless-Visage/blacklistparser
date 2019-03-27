@@ -5,12 +5,12 @@ from distutils.core import setup
 
 setup(
         name='gphull',
-        version='0.0.1.dev1',
+        version='0.1.0.dev00',
         description='ip/domain blacklist management tools',
         author='Liam Nolan',
         author_email='Armorless-Visage@users.noreply.github.com',
-        url='https://github.com/Armorless-Visage/bdigester',
-        packages=['bdigester', 'bdigester.core'],
+        url='https://github.com/Armorless-Visage/gphull',
+        packages=['gphull', 'gphull.core'],
         classifiers=[
             'Intended Audience :: System Administrators',
             'Operating System :: BSD :: OpenBSD',

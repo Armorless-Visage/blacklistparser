@@ -40,7 +40,7 @@ class IPList:
         if Database.Manager.bulk_add(
                 db_manager,
                 self.data,
-                self.datatype,
+                'ip',
                 self.source_url) is True:
             pass
         else:
@@ -150,7 +150,7 @@ class Format:
 class Validator:
     @staticmethod
     def ipv4_addr(addr, printerr=False):
-        if Regex.IPV4_ADDR.match(addr):
+        if Regex.IPV4_ADDR_2.match(addr):
             return addr
         else:
             if printerr:

@@ -33,17 +33,12 @@ def get_webpage(url, proxy=False, fake_user_agent=True, last_modified=None):
     if fake_user_agent:
         headers.append(('User-Agent', agent))
     if last_modified:
-        headers.append(('If-Modified-Since', last_modified))
+        headers.append(('If-Modified-Since', last_modified)) # VALIDATE
 
     opener.addheaders = headers
     
     # try and get the webpage
-    try:
-        page = opener.open(url)
-    except URLError as ue:
-        if ue.code == 304:
-            raise Exceptions.NotModified
-        raise
+    page = opener.open(url)
 
     # check the page is something
     if not page:
