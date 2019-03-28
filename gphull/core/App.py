@@ -194,7 +194,7 @@ class App:
             '-f',
             '--format',
             help='input/output format',
-            choices=list(Data.VALIDATOR.keys()),
+            choices=list(Data.FORMAT.keys()),
             action='store',
             required=True,
             )
@@ -335,7 +335,7 @@ class App:
             raise Exceptions.DatabaseError('No results from db found')
         pending = []
         for result in results:
-            if Data.VALIDATOR[self.args.format](result[0]):
+            if Data.VALIDATOR[self.base_type](result[0]):
                 valid += 1
                 pending.append(result[0])
             else:

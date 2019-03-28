@@ -64,7 +64,21 @@ class Format:
         sep = '\n'
         output = sep.join(data)
         return output
-
+    
+    @staticmethod
+    def unbound_nxdomain(data):
+        '''
+        for use with unbound
+        # TODO use generator to fix memory problems
+        '''
+        sep = '" always_nxdomain\nlocal-zone: "'
+        output = sep.join(data)
+        output = 'local-zone: "' + output + '" always_nxdomain'
+        return output
+            
+        
+        
+        
 class Validator:
     @staticmethod
     def ipv4_addr(addr, printerr=False):
@@ -87,9 +101,10 @@ VALIDATOR = {
 BASE_TYPE = {
     'ipset' : 'ip',
     'domain' : 'domain',
-    'adblock' : 'domain'}
+    'adblock' : 'domain',
+    'unbound_nxdomain' : 'domain'}
 FORMAT = {
         'ipset' : Format.newline,
-        'newline' : Format.newline }
+        'unbound_nxdomain' : Format.unbound_nxdomain }
 
             
