@@ -11,7 +11,7 @@ class DataList:
         self.source_url = source
 
         if datatype not in VALIDATOR.keys():
-            errmsg = 'data type' + str(datatype) + 'not supported'
+            errmsg = 'data type ' + str(datatype) + ' not supported'
             raise Exceptions.IncorrectDataType(errmsg)
         self.datatype = datatype
         self.base_type = BASE_TYPE[self.datatype]

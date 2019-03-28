@@ -265,7 +265,7 @@ class App:
             Database.Manager.add_source_url(
                 self.db,
                 self.args.add,
-                self.base_type,
+                self.args.format,
                 self.args.interval)
             # commit
             self.db.db_conn.commit()
