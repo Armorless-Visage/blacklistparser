@@ -6,7 +6,7 @@
 
 from logging import getLogger, StreamHandler, Formatter
 from logging.handlers import WatchedFileHandler, SysLogHandler
-from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
+from logging import DEBUG, INFO, CRITICAL
 from gphull.core import types
 
 

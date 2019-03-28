@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # Liam Nolan (c) 2018 ISC
 
-from sys import exit
 from os import path
 from struct import unpack
 from time import time
@@ -26,14 +25,9 @@ class Manager:
             if self.sqlite3_db_application_id(db_path) is False:
                 errmsg = 'File is a sqlite3 db, but the application_id is not correct'
                 raise Exceptions.BadFileType(errmsg)
-        try:
-            self.db_conn = sqlite3.connect(db_path)
-            self.db_cur = self.db_conn.cursor()
-            self.init_db()
-        except sqlite3.OperationalError or sqlite3.DatabaseError:
-            # TODO insert exception handling here
-            #      - permissions check, symlink, path
-            raise
+        self.db_conn = sqlite3.connect(db_path)
+        self.db_cur = self.db_conn.cursor()
+        self.init_db()
 
 
     def init_db(self):
@@ -106,7 +100,6 @@ class Manager:
         '''
         change the last-modified date for url
         '''
-        cur = self.db_cur
         self.db_cur.execute('''UPDATE sources SET last_modified_head=? WHERE url=?''', (last_modified, url))
         
         
@@ -116,7 +109,6 @@ class Manager:
         ! Does not validate do it elsewhere TODO integrate val here
         ! Does not explicitly commit
         '''
-        cur = self.db_cur
         current_time = time()
 
         time_update = [] 
@@ -150,7 +142,6 @@ class Manager:
         NOTE: this checks time.time() every time it is executed, probably
         going to be very slow if it's called lots
         '''
-        cur = self.db_cur
         if type(data) is not str:
             raise Exceptions.NotString('address must be a string')
         element = data.rstrip()
@@ -172,7 +163,6 @@ class Manager:
         You can do a more selective removal by defining the source_url of the
         entry to be removed.
         '''
-        cur = self.db_cur
         if type(data) is not str:
             raise Exceptions.NotString('address must be a string')
         if type(source_url) is not type(None) and type(source_url) is not str:
@@ -184,7 +174,7 @@ class Manager:
         else:
             data_remove = (element, source_url)
             remove_line = (" DELETE FROM data WHERE name=? AND source=? ")
-        cur.execute(remove_line, data_remove)
+        self.db_cur.execute(remove_line, data_remove)
     
     def add_source_url(self, url, dataformat, timeout):
         '''
@@ -198,7 +188,6 @@ class Manager:
         '''
         # NOTE: Do sql real vals overflow after 64b?
     
-        cur = self.db_cur
         # url, source page format, page update timeout,
         # last_updated set to 61sec after epoch (never)
         t = ( str(url), str(dataformat), float(timeout), float(61), None )
@@ -213,7 +202,6 @@ class Manager:
         '''
         delete a blacklist source url from the database
         '''
-        cur = self.db_cur
         url_tuple = ( str(url), )
         try:
             self.db_cur.execute('''DELETE FROM sources WHERE url=?''', url_tuple)
@@ -221,14 +209,6 @@ class Manager:
             raise
         return True
             
-    def touch_source_url(self, url):
-        t = (time(), url)
-        try:
-            self.db_cur.execute('''UPDATE sources SET last_updated=? WHERE url=?''', t)
-        except sqlite3.DatabaseError:
-            raise
-        return True
-
     def test_source_url(self, url):
         url_tuple = (str(url),)
         try:
@@ -237,18 +217,6 @@ class Manager:
             raise
         if self.db_cur.fetchone() is None:
             raise Exceptions.NoMatchesFound('No source urls matching input found')
-        return True
-
-    def change_source_interval(self, url, timeout):
-        cur = self.db_cur
-        url_tuple = (float(timeout), str(url))
-        try:
-            cur.execute('''UPDATE sources SET timeout=? WHERE url=?''', url_tuple)
-            cur.execute('''SELECT * FROM sources WHERE timout=? AND url=?''', url_tuple)
-            if self.db_cur.fetchone() is None:
-                return False
-        except sqlite3.DatabaseError:
-            raise
         return True
 
     @staticmethod 

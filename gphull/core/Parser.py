@@ -12,6 +12,7 @@ class BaseParser(metaclass=ABCMeta):
         self.results = self.extract_data(self.origin_data)
 
     @abstractmethod
+    @staticmethod
     def extract_data(data):
         pass
     

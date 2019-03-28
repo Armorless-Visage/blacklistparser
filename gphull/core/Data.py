@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 # Liam Nolan (c) 2018 ISC
 
-import re
 from abc import abstractmethod, ABCMeta
-from gphull.core import Parser, Exceptions, Database, Regex
+from gphull.core import Exceptions, Database, Regex
 
 
 class IPList:
@@ -43,9 +42,7 @@ class IPList:
             pass
         else:
             errmsg = 'Error adding list to database'
-            #raise Exceptions.ExtractorError(errmsg)
-            raise
-
+            raise Exceptions.ExtractorError(errmsg)
 
 class Content(metaclass=ABCMeta):
     def __init__(self, data, source_url, datatype, db):
@@ -57,9 +54,10 @@ class Content(metaclass=ABCMeta):
         # check args
         if self.source_url is not str and self.source_url is not None:
             raise TypeError('source_url must be a string or None)')
-        if self.datatype not in Parser.VALIDATOR.keys():
+        if self.datatype not in VALIDATOR.keys():
             errmsg = 'data type' + str(self.datatype) + 'not supported'
             raise Exceptions.IncorrectDataType(errmsg)
+        
         @abstractmethod
         def add_to_db(self, db_manager):
             pass
@@ -128,8 +126,8 @@ class Validator:
         return None
     @staticmethod
     def domain(name):
-        if Regex.NEWLINE_DOMAIN.match(addr):
-            return addr
+        if Regex.NEWLINE_DOMAIN.match(name):
+            return name
         return None
 
 VALIDATOR = {

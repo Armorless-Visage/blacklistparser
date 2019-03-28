@@ -4,7 +4,6 @@
 # Full licence terms located in LICENCE file
 
 from os import path
-from sqlite3 import Cursor
 from gphull.core import Data
 
 
@@ -20,14 +19,6 @@ def base_path_type(pathname):
     if path.isdir(path.dirname(pathname)) is True:
         return pathname
     return None
-def dir_type(pathname):
-    '''
-    custom type for checking a directory exists
-    '''
-    if path.isdir(pathname) is True:
-        return pathname
-    return None
-
 def format_type(string):
     '''
     returns input if the input string matches

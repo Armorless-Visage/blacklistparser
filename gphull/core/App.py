@@ -5,10 +5,7 @@
 # Full licence terms located in LICENCE file
 
 from argparse import ArgumentParser
-from logging import getLogger, StreamHandler, Formatter
-from logging.handlers import WatchedFileHandler, SysLogHandler
-from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
-from gphull.core import Database, types, Exceptions, Net, Parser, Data
+from gphull.core import Database, types, Exceptions, Net, Data
 from gphull.core import Logging
 from tempfile import NamedTemporaryFile
 from shutil import copy
@@ -391,8 +388,7 @@ class App:
         # the last_modified header will be None or a Last-Modified HTTP header
         to_be_updated = self.db.pull_active_source_urls()
         retr = []
-        db = Database.Manager(self.args.database)
-
+        
         # GET THE WEBPAGES
         self.logger.log.info('Started retrieving webpages')
         for entry in to_be_updated: # get the webpages
@@ -408,12 +404,10 @@ class App:
             except error.HTTPError as ue:
                 if ue.code == 404:
                     self.logger.log.error('404 Error ' + str(entry['url']))
-                    pass
                 elif ue.code == 304:
                     self.logger.log.info('Not Modified ' + str(entry['url']))
-                    pass
                 else:
-                    self.logger.error(str(ue.code) + ' Error ' + str(entry['url']))
+                    self.logger.log.error(str(ue.code) + ' Error ' + str(entry['url']))
         
                 
         # Process webpages into data
@@ -445,7 +439,6 @@ class App:
                 self.logger.log.debug('Last-Modified updated for ' + str(wurl) + ' to ' + str(lmod))
             except:
                 self.logger.log.error('Failed to update Last-Modified')
-                pass
         # COMMIT        
         try:
             self.db.db_conn.commit()
