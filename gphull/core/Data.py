@@ -1,26 +1,32 @@
 #!/usr/bin/env python3
 # Liam Nolan (c) 2018 ISC
 
-from abc import abstractmethod, ABCMeta
 from gphull.core import Exceptions, Database, Regex
 
 
-class IPList:
-    def __init__(self, data, raise_errors=False, source=None):
+class DataList:
+    def __init__(self, data, datatype, source=None, raise_errors=False):
         self.data = []
-        self.datatype = 'ipset'
         self.index = -1 # start index at -1 b/c it is inc before return
         self.source_url = source
+
+        if datatype not in VALIDATOR.keys():
+            errmsg = 'data type' + str(datatype) + 'not supported'
+            raise Exceptions.IncorrectDataType(errmsg)
+        self.datatype = datatype
+        self.base_type = BASE_TYPE[self.datatype]
+
         for line in data:
             stringified = str(line)
-            if not VALIDATOR[self.datatype](stringified, printerr=False):
+            if not VALIDATOR[self.datatype](stringified):
                 # if raise_errors is true throw an exception
                 if raise_errors:
                     errmsg = ("Not a valid " + self.datatype + " address")
                     raise Exceptions.ValidatorError(errmsg)
             else:
                 self.data.append(stringified)
-            
+        
+        
     def __iter__(self):
         return self
     def __next__(self):
@@ -37,68 +43,12 @@ class IPList:
         if Database.Manager.bulk_add(
                 db_manager,
                 self.data,
-                'ip',
+                self.base_type,
                 self.source_url) is True:
             pass
         else:
             errmsg = 'Error adding list to database'
             raise Exceptions.ExtractorError(errmsg)
-
-class Content(metaclass=ABCMeta):
-    def __init__(self, data, source_url, datatype, db):
-
-        self.data = data
-        self.datatype = datatype
-        self.source_url = source_url
-
-        # check args
-        if self.source_url is not str and self.source_url is not None:
-            raise TypeError('source_url must be a string or None)')
-        if self.datatype not in VALIDATOR.keys():
-            errmsg = 'data type' + str(self.datatype) + 'not supported'
-            raise Exceptions.IncorrectDataType(errmsg)
-        
-        @abstractmethod
-        def add_to_db(self, db_manager):
-            pass
-
-class DataList(Content):
-    def __init__(self):
-        super()
-        # for iter
-        self.index = len(self.data)
-        
-        for each in self.data:
-            if not VALIDATOR[self.datatype](each):
-                errmsg = ("Not a valid " + self.datatype + " address")
-                raise Exceptions.ValidatorError(errmsg)
-
-    def __iter__(self):
-        return self
-    
-    def __next__(self):
-        if self.index == 0:
-            raise StopIteration
-        self.index = self.index - 1
-        return self.data[self.index]
-
-    def add_to_db(self, db_manager):
-        '''
-        add this list to a databaseb via db connection
-        '''
-        if not VALIDATOR[self.datatype](self.data):
-            errmsg = ('address not type ' + self.datatype)
-            raise Exceptions.IncorrectDataType(errmsg)
-        if Database.Manager.bulk_add(
-                db_manager,
-                self.data,
-                self.datatype,
-                self.source_url) is True:
-            pass
-        else:
-            errmsg = 'Error adding list to database'
-            raise Exceptions.ExtractorError(errmsg)
-        return True
 
 class Format:
     '''
@@ -132,8 +82,12 @@ class Validator:
 
 VALIDATOR = {
     'ipset' : Validator.ipv4_addr,
-    'newline' : Validator.domain,
-    'adblock' : Validator.domain }
+    'domain' : Validator.domain,
+    'adblock' : Validator.domain}
+BASE_TYPE = {
+    'ipset' : 'ip',
+    'domain' : 'domain',
+    'adblock' : 'domain'}
 FORMAT = {
         'ipset' : Format.newline,
         'newline' : Format.newline }

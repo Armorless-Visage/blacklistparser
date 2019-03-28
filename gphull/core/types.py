@@ -19,11 +19,3 @@ def base_path_type(pathname):
     if path.isdir(path.dirname(pathname)) is True:
         return pathname
     return None
-def format_type(string):
-    '''
-    returns input if the input string matches
-    a supported data type OLD
-    '''
-    if string in list(Data.VALIDATOR)[0]:
-        return string
-    return None

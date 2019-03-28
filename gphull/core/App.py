@@ -106,8 +106,8 @@ class App:
             action='store',
             )
         self.source_parser.add_argument(
-            '-f',
-            '--frequency',
+            '-i',
+            '--interval',
             help='Frequency in seconds between updating source urls',
             action='store',
             type=int,
@@ -121,12 +121,11 @@ class App:
             action='store',
             )
         self.source_parser.add_argument(
-            '-t',
-            '--type',
+            '-f',
+            '--format',
             help='input/output format',
-            type=types.format_type,
             action='store',
-            choices=list(Data.VALIDATOR)[0],
+            choices=list(Data.VALIDATOR.keys()),
             required=True
             )
         '''
@@ -177,7 +176,6 @@ class App:
             '--source',
             help='define a url to be set as the source of the address',
             action='store',
-            type=types.format_type
             )
         '''
         output subparser
@@ -196,7 +194,7 @@ class App:
             '-f',
             '--format',
             help='input/output format',
-            type=types.format_type,
+            choices=list(Data.VALIDATOR.keys()),
             action='store',
             required=True,
             )
@@ -234,31 +232,17 @@ class App:
     
         self.args = self.parent_parser.parse_args()
     
-        self.args = self.parent_parser.parse_args()
         if self.args.subparser_name is None:
             no_action_msg = ('An action must be specified. eg. '
                 + 'gphull --database /tmp/test.db source'
                 + '--add https://example.com --frequency 3600 '
-                + '--type \'ipset\'')
+                + '--format \'ipset\'')
             raise self.parent_parser.error(no_action_msg)
         # so the function can be used to get the args directly, return the parsed args
-        # FIXME lame hack
-        ipf = ['ipset']
-        dof = ['newline', 'adblock']
         if self.args.subparser_name == 'output':
-            if self.args.format in ipf:
-                self.base_type = 'ip'
-            elif self.args.format in dof:
-                self.base_type = 'domain'
-            else:
-                raise Exceptions.IncorrectDataType('FIXME THIS SHOULDN\'t OCCUR')
+            self.base_type = Data.BASE_TYPE[self.args.format]
         if self.args.subparser_name == 'source':
-            if self.args.type in ipf:
-                self.base_type = 'ip'
-            elif self.args.type in dof:
-                self.base_type = 'domain'
-            else:
-                raise Exceptions.IncorrectDataType('FIXME THIS SHOULDN\'t OCCUR')
+            self.base_type = Data.BASE_TYPE[self.args.format]
         return self.args
         
     def action_source(self):
@@ -282,7 +266,7 @@ class App:
                 self.db,
                 self.args.add,
                 self.base_type,
-                self.args.frequency)
+                self.args.interval)
             # commit
             self.db.db_conn.commit()
             # check url is added
@@ -424,7 +408,10 @@ class App:
             self.logger.log.debug(str(len(page)) + ' lines in page.')
             self.logger.log.debug(str(result['web_response'].info()))
             # IPList will only put validated data into self.data and can be used safely
-            processed_data = Data.IPList(lines, source=result['web_response'].geturl()) # TODO OTHER TYPES!
+            processed_data = Data.DataList(
+                lines,
+                datatype=result['source_config']['page_format'],
+                source=result['web_response'].geturl())
             # Add data to DB
             try:
                 processed_data.add_to_db(self.db)
