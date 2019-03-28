@@ -399,7 +399,8 @@ class App:
                     last_modified=entry['last_modified'])
                 result = {
                     'web_response' : response,
-                    'source_config' : entry }
+                    'source_config' : entry,
+                    'url' : entry['url'] }
                 retr.append(result)
             except error.HTTPError as ue:
                 if ue.code == 404:
@@ -439,6 +440,12 @@ class App:
                 self.logger.log.debug('Last-Modified updated for ' + str(wurl) + ' to ' + str(lmod))
             except:
                 self.logger.log.error('Failed to update Last-Modified')
+            # Update last_updated into sources 
+            try:
+                self.db.touch_source_url(result['url'])
+            except:
+                self.logger.log.error('Failed to update sources with last_updated')
+                
         # COMMIT        
         try:
             self.db.db_conn.commit()

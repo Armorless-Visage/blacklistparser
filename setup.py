@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-# Liam Nolan (c) 2018 ISC
+# Liam Nolan (c) 2019 ISC
 
 from distutils.core import setup
 
 setup(
         name='gphull',
-        version='0.1.0.dev01',
-        description='ip/domain blacklist management tools',
+        version='0.1.0.dev02',
+        description='ip/domain blacklist management tool',
         author='Liam Nolan',
         author_email='Armorless-Visage@users.noreply.github.com',
         url='https://github.com/Armorless-Visage/gphull',

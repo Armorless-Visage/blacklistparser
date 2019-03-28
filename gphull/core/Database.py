@@ -101,6 +101,13 @@ class Manager:
         change the last-modified date for url
         '''
         self.db_cur.execute('''UPDATE sources SET last_modified_head=? WHERE url=?''', (last_modified, url))
+        return True
+
+    def touch_source_url(self, url):
+        t = (time(), url)
+        self.db_cur.execute('''UPDATE sources SET last_updated=? WHERE url=?''', t)
+        return True
+
         
         
     def bulk_add(self, data_lst, data_type, source_url):
