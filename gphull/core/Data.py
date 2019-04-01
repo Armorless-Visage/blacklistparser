@@ -97,9 +97,11 @@ class Validator:
 VALIDATOR = {
     'ipset' : Validator.ipv4_addr,
     'domain' : Validator.domain,
+    'ip' : Validator.ipv4_addr,
     'adblock' : Validator.domain}
 BASE_TYPE = {
     'ipset' : 'ip',
+    'ip' : 'ip',
     'domain' : 'domain',
     'adblock' : 'domain',
     'unbound_nxdomain' : 'domain'}

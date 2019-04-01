@@ -5,7 +5,7 @@ from distutils.core import setup
 
 setup(
         name='gphull',
-        version='0.1.0.dev05',
+        version='0.1.0.dev08',
         description='ip/domain blacklist management tool',
         author='Liam Nolan',
         author_email='Armorless-Visage@users.noreply.github.com',

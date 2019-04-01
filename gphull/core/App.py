@@ -368,11 +368,15 @@ class App:
         
     def action_update(self):
         self.logger.log.info('Started update module')
-        # this will contain a tuple of url, last_modified
-        # the last_modified header will be None or a Last-Modified HTTP header
-        to_be_updated = self.db.pull_active_source_urls()
         retr = []
-        
+        try:
+            # this will contain a tuple of url, last_modified
+            # the last_modified header will be None or a Last-Modified HTTP header
+            to_be_updated = self.db.pull_active_source_urls()
+        except Exceptions.NoMatchesFound:
+            self.logger.log.error('No sources ready to update. Exiting.')
+            exit(1)
+            
         # GET THE WEBPAGES
         self.logger.log.info('Started retrieving webpages')
         for entry in to_be_updated: # get the webpages
