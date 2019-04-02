@@ -2,10 +2,11 @@
 # Liam Nolan (c) 2018 ISC
 
 from os import path
-from struct import unpack
 from time import time
+from struct import unpack
+from sqlite3 import connect, DatabaseError
+
 from gphull.core import Exceptions
-import sqlite3
 
 # SQLITE3 Application ID
 APPLICATION_ID = 0x722ab81c
@@ -25,7 +26,7 @@ class Manager:
             if self.sqlite3_db_application_id(db_path) is False:
                 errmsg = 'File is a sqlite3 db, but the application_id is not correct'
                 raise Exceptions.BadFileType(errmsg)
-        self.db_conn = sqlite3.connect(db_path)
+        self.db_conn = connect(db_path)
         self.db_cur = self.db_conn.cursor()
         self.init_db()
 
@@ -63,7 +64,7 @@ class Manager:
             self.db_cur.execute(groups_table)
             self.db_conn.commit()
             return True
-        except sqlite3.DatabaseError:
+        except DatabaseError:
             raise
 
     def pull_names_2(self, timeout, data_format):
@@ -75,9 +76,10 @@ class Manager:
         '''
         return a list of the blacklist urls that need updating from sources
         '''
-        ctime = (time(),)
         cur = self.db_cur
-        self.db_cur.execute('''SELECT url, page_format, last_modified_head FROM sources WHERE ? > last_updated + timeout''', ctime)
+        pull_line = ('''SELECT url, page_format, last_modified_head FROM'''
+            + ''' sources WHERE ? > last_updated + timeout''')
+        self.db_cur.execute(pull_line, (time(),))
         # any invalid urls found increment this
         errcnt = 0
         urls = []
@@ -86,26 +88,29 @@ class Manager:
                 result = {
                     'url' : url_result[0],
                     'page_format' : url_result[1],
-                    'last_modified' : url_result[2] }
+                    'last_modified' : url_result[2]}
                 urls.append(result)
             else:
                 errcnt += 1
-        if len(urls) > 0:
+        if urls:
             return urls
         else:
-            errmsg = ('All urls on cooldown or none in database. Invalid urls found in db: ' + str(errcnt))
+            errmsg = ('All urls on cooldown or none in database.'
+                + ' Invalid urls found in db: ' + str(errcnt))
             raise Exceptions.NoMatchesFound(errmsg)
 
     def update_last_modified(self, url, last_modified):
         '''
         change the last-modified date for url
         '''
-        self.db_cur.execute('''UPDATE sources SET last_modified_head=? WHERE url=?''', (last_modified, url))
+        line = '''UPDATE sources SET last_modified_head=? WHERE url=?'''
+        self.db_cur.execute(line, (last_modified, url))
         return True
 
     def touch_source_url(self, url):
-        t = (time(), url)
-        self.db_cur.execute('''UPDATE sources SET last_updated=? WHERE url=?''', t)
+        tu = (time(), url)
+        line = '''UPDATE sources SET last_updated=? WHERE url=?'''
+        self.db_cur.execute(line, tu)
         return True
 
 
@@ -121,13 +126,13 @@ class Manager:
         time_update = []
         data_insert = []
 
-        # check there is something to add then format and add them all using executemany
         if not data_lst:
             errmsg = 'No items to add.'
             raise Exceptions.EmptyList(errmsg)
         for each in data_lst:
             data = each.rstrip()
-            data_insert.append((data, data_type, current_time, current_time, source_url))
+            data_insert.append(
+                (data, data_type, current_time, current_time, source_url))
             time_update.append((current_time, data, source_url))
 
         #NOTE: this code above only writes the last url w/ addr to source
@@ -149,12 +154,16 @@ class Manager:
         NOTE: this checks time.time() every time it is executed, probably
         going to be very slow if it's called lots
         '''
-        if type(data) is not str:
+        if not isinstance(data, str):
             raise Exceptions.NotString('address must be a string')
-        element = data.rstrip()
         current_time = time()
-        data_insert = ( element, data_type, current_time, current_time, source_url )
-        time_update = ( current_time, source_url, element )
+        data_insert = (
+            data.rstrip(),
+            data_type,
+            current_time,
+            current_time,
+            source_url)
+        time_update = (current_time, source_url, data.rstrip())
 
         line = (" INSERT OR IGNORE INTO data" +
                 " VALUES ( ?, ?, ?, ?, ? ) ")
@@ -170,9 +179,9 @@ class Manager:
         You can do a more selective removal by defining the source_url of the
         entry to be removed.
         '''
-        if type(data) is not str:
+        if not isinstance(data, str):
             raise Exceptions.NotString('address must be a string')
-        if type(source_url) is not type(None) and type(source_url) is not str:
+        if not isinstance(source_url, None) and not isinstance(source_url, str):
             raise Exceptions.NotString('source_url must be a string or None')
         element = data.rstrip()
         if source_url is None:
@@ -197,11 +206,12 @@ class Manager:
 
         # url, source page format, page update timeout,
         # last_updated set to 61sec after epoch (never)
-        t = ( str(url), str(dataformat), float(timeout), float(61), None )
+        tu = (str(url), str(dataformat), float(timeout), float(61), None)
 
         try:
-            self.db_cur.execute('''INSERT OR IGNORE INTO sources VALUES ( ?, ?, ?, ?, ? )''', t)
-        except sqlite3.DatabaseError:
+            line = '''INSERT OR IGNORE INTO sources VALUES ( ?, ?, ?, ?, ? )'''
+            self.db_cur.execute(line, tu)
+        except DatabaseError:
             raise
         return True
 
@@ -209,21 +219,22 @@ class Manager:
         '''
         delete a blacklist source url from the database
         '''
-        url_tuple = ( str(url), )
         try:
-            self.db_cur.execute('''DELETE FROM sources WHERE url=?''', url_tuple)
-        except sqlite3.DatabaseError:
+            line = '''DELETE FROM sources WHERE url=?'''
+            self.db_cur.execute(line, (str(url),))
+        except DatabaseError:
             raise
         return True
 
     def test_source_url(self, url):
-        url_tuple = (str(url),)
         try:
-            self.db_cur.execute('''SELECT * FROM sources WHERE url=?''', url_tuple)
-        except sqlite3.DatabaseError:
+            line = '''SELECT * FROM sources WHERE url=?'''
+            self.db_cur.execute(line, (str(url),))
+        except DatabaseError:
             raise
         if self.db_cur.fetchone() is None:
-            raise Exceptions.NoMatchesFound('No source urls matching input found')
+            errmsg = 'No source urls matching input found'
+            raise Exceptions.NoMatchesFound(errmsg)
         return True
 
     @staticmethod
@@ -237,9 +248,8 @@ class Manager:
             if header == b'SQLite format 3\x00':
                 db_file.close()
                 return pathname
-            else:
-                db_file.close()
-                return False
+            db_file.close()
+            return False
     @staticmethod
     def sqlite3_db_application_id(pathname):
         '''
@@ -254,6 +264,5 @@ class Manager:
             if file_id == APPLICATION_ID:
                 db_file.close()
                 return pathname
-            else:
-                db_file.close()
-                return False
+            db_file.close()
+            return False

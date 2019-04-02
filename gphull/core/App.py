@@ -392,15 +392,15 @@ class App:
         except Exceptions.NoMatchesFound:
             self.logger.log.error('No sources ready to update. Exiting.')
             exit(1)
-        self.logger.log.debug(str(len(to_be_updated) +
-            ' sources to be updated'))
+        self.logger.log.debug(str(len(to_be_updated))
+            + ' sources to be updated')
 
         # GET THE WEBPAGES
         self.logger.log.info('Started retrieving webpages')
         for entry in to_be_updated: # get the webpages
-            self.logger.log.info('URL ' +
-                str(entry['url']) + ' last updated ' +
-                str(entry['last_modified']))
+            self.logger.log.info('URL '
+                + str(entry['url']) + ' last updated '
+                + str(entry['last_modified']))
             try:
                 response = Net.get_webpage(
                     url=entry['url'],
@@ -414,8 +414,8 @@ class App:
                 if ue.code == 304:
                     self.logger.log.info('Not Modified ' + str(entry['url']))
                 else:
-                    self.logger.log.error(str(ue.code) +
-                        ' Error ' + str(entry['url']))
+                    self.logger.log.error(str(ue.code)
+                        + ' Error ' + str(entry['url']))
 
         if not retr:
             self.logger.log.warning('All webpages returned an error')
@@ -448,8 +448,8 @@ class App:
                 wurl = result['web_response'].geturl()
                 lmod = result['web_response'].info()['Last-Modified']
                 self.db.update_last_modified(wurl, lmod)
-                self.logger.log.debug('Last-Modified updated for ' +
-                    str(wurl) + ' to ' + str(lmod))
+                self.logger.log.debug('Last-Modified updated for '
+                    + str(wurl) + ' to ' + str(lmod))
             except SQLError:
                 self.logger.log.error('Failed to update Last-Modified')
             try:
