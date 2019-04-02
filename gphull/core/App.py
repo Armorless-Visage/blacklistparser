@@ -418,7 +418,9 @@ class App:
                         + ' Error ' + str(entry['url']))
 
         if not retr:
-            self.logger.log.warning('All webpages returned an error')
+            self.logger.log.warning('No webpages to parse. Exiting.')
+            exit(1)
+            
         # Process webpages into data
         self.logger.log.info('Processing webpages')
         for result in retr:
