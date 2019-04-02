@@ -4,8 +4,6 @@
 # Full licence terms located in LICENCE file
 
 from os import path
-from gphull.core import Data
-
 
 '''
 some types for argparse type argument

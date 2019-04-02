@@ -15,7 +15,7 @@ class BaseParser(metaclass=ABCMeta):
     @staticmethod
     def extract_data(data):
         pass
-    
+
     @classmethod
     def type_helper(cls, data):
         try:
@@ -31,18 +31,17 @@ class ABPParser(BaseParser):
         use re.finall to get domains out of ABP filters and return as a list of
         tuples containing regex groups
         returns the list or raises Exceptions.NoMatchesFound
-        '''
-        '''
+
         matches AdblockPlus (ABP) filter syntax for domain names
         eg. ||google.com^
         eg. ||google.com^$third-party
         '''
         # regex string for ABP domains in Regex.abp_domain
         pattern = re.compile(Regex.ABP_DOMAIN, re.MULTILINE)
- 
+
         # exclude third party rules
-    #   if third_party is not True:
-    #       pattern = re.compile(Regex.abp_domain_nothird, re.MULTILINE)
+        #   if third_party is not True:
+        #       pattern = re.compile(Regex.abp_domain_nothird, re.MULTILINE)
 
         matches = re.findall(pattern, data)
         if matches:
@@ -57,7 +56,7 @@ class ABPParser(BaseParser):
             return matches
         else:
             raise Exceptions.NoMatchesFound("No ABP syntax domains found.")
-    
+
 class NewlineParser(BaseParser):
     @staticmethod
     def extract_data(data):
@@ -97,7 +96,7 @@ def format_detector(data):
     # test adblock plus filter format
     try:
         ABPParser.extract_data(data)
-        return 'adblock' 
+        return 'adblock'
     except Exceptions.NoMatchesFound:
         pass
     # test newline format

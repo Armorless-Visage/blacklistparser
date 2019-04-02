@@ -44,13 +44,13 @@ class Manager:
                 "last_modified_head REAL )")
         data_table = ("CREATE TABLE IF NOT EXISTS data ( " +
                 "name TEXT, " +
-                "data_format TEXT, " + 
+                "data_format TEXT, " +
                 "first_seen REAL, " +
                 "last_seen REAL, " +
                 "source_url TEXT, " +
                 "UNIQUE ( name, source_url ))")
         groups_table = ("CREATE TABLE IF NOT EXISTS data ( " +
-                "name TEXT, " + 
+                "name TEXT, " +
                 "membership TEXT )")
         application_id = ("PRAGMA application_id = 1915402268")
         user_version = ("PRAGMA user_version = 0x1")
@@ -65,25 +65,25 @@ class Manager:
             return True
         except sqlite3.DatabaseError:
             raise
-        
+
     def pull_names_2(self, timeout, data_format):
         line = ('SELECT name FROM data WHERE (last_seen + ? >= ?) AND (data_format = ?)')
         self.db_cur.execute(line, (timeout, time(), data_format))
         return self.db_cur.fetchall()
-    
+
     def pull_active_source_urls(self):
         '''
         return a list of the blacklist urls that need updating from sources
         '''
         ctime = (time(),)
         cur = self.db_cur
-        self.db_cur.execute('''SELECT url, page_format, last_modified_head FROM sources WHERE ? >= last_updated + timeout''', ctime)
+        self.db_cur.execute('''SELECT url, page_format, last_modified_head FROM sources WHERE ? > last_updated + timeout''', ctime)
         # any invalid urls found increment this
         errcnt = 0
         urls = []
         for url_result in cur.fetchall():
             if url_result:
-                result = { 
+                result = {
                     'url' : url_result[0],
                     'page_format' : url_result[1],
                     'last_modified' : url_result[2] }
@@ -108,8 +108,8 @@ class Manager:
         self.db_cur.execute('''UPDATE sources SET last_updated=? WHERE url=?''', t)
         return True
 
-        
-        
+
+
     def bulk_add(self, data_lst, data_type, source_url):
         '''
         add a list of items to the db using executemany
@@ -118,31 +118,31 @@ class Manager:
         '''
         current_time = time()
 
-        time_update = [] 
+        time_update = []
         data_insert = []
-         
+
         # check there is something to add then format and add them all using executemany
         if not data_lst:
             errmsg = 'No items to add.'
-            raise Exceptions.EmptyList(errmsg) 
+            raise Exceptions.EmptyList(errmsg)
         for each in data_lst:
             data = each.rstrip()
             data_insert.append((data, data_type, current_time, current_time, source_url))
             time_update.append((current_time, data, source_url))
-        
+
         #NOTE: this code above only writes the last url w/ addr to source
         iline = (" INSERT OR IGNORE INTO data" +
                 " VALUES ( ?, ?, ?, ?, ? )")
-        tline = (" UPDATE data" + 
+        tline = (" UPDATE data" +
                 " SET last_seen=? WHERE name=? AND source_url=?")
-        try: 
+        try:
             self.db_cur.executemany(iline, data_insert)
             self.db_cur.executemany(tline, time_update)
         except:
             raise
-        
+
         return True
-    
+
     def add_element(self, data, data_type, source_url):
         '''
         add a single element to the db
@@ -153,9 +153,9 @@ class Manager:
             raise Exceptions.NotString('address must be a string')
         element = data.rstrip()
         current_time = time()
-        data_insert = ( element, data_type, current_time, current_time, source_url ) 
+        data_insert = ( element, data_type, current_time, current_time, source_url )
         time_update = ( current_time, source_url, element )
-        
+
         line = (" INSERT OR IGNORE INTO data" +
                 " VALUES ( ?, ?, ?, ?, ? ) ")
         time_line = (" UPDATE data" +
@@ -165,7 +165,7 @@ class Manager:
 
     def remove_element(self, data, source_url=None):
         '''
-        Remove a single element from the data table, by default the 
+        Remove a single element from the data table, by default the
         function removes all entries matching 'data' regardless of source_url.
         You can do a more selective removal by defining the source_url of the
         entry to be removed.
@@ -182,7 +182,7 @@ class Manager:
             data_remove = (element, source_url)
             remove_line = (" DELETE FROM data WHERE name=? AND source=? ")
         self.db_cur.execute(remove_line, data_remove)
-    
+
     def add_source_url(self, url, dataformat, timeout):
         '''
         - Add a blacklist source to the database, returns True for OK, False
@@ -194,11 +194,11 @@ class Manager:
         - timeout: seconds between updates
         '''
         # NOTE: Do sql real vals overflow after 64b?
-    
+
         # url, source page format, page update timeout,
         # last_updated set to 61sec after epoch (never)
         t = ( str(url), str(dataformat), float(timeout), float(61), None )
-        
+
         try:
             self.db_cur.execute('''INSERT OR IGNORE INTO sources VALUES ( ?, ?, ?, ?, ? )''', t)
         except sqlite3.DatabaseError:
@@ -215,7 +215,7 @@ class Manager:
         except sqlite3.DatabaseError:
             raise
         return True
-            
+
     def test_source_url(self, url):
         url_tuple = (str(url),)
         try:
@@ -226,19 +226,19 @@ class Manager:
             raise Exceptions.NoMatchesFound('No source urls matching input found')
         return True
 
-    @staticmethod 
+    @staticmethod
     def sqlite3_db_file_type(pathname):
         '''
         Return pathname if the path has a valid sqlite3 header.
         Otherwise returns false.
         '''
-        with open(pathname, 'rb') as db_file:                         
-            header = db_file.read(16)                                 
-            if header == b'SQLite format 3\x00':                      
-                db_file.close()    
+        with open(pathname, 'rb') as db_file:
+            header = db_file.read(16)
+            if header == b'SQLite format 3\x00':
+                db_file.close()
                 return pathname
-            else:                  
-                db_file.close()    
+            else:
+                db_file.close()
                 return False
     @staticmethod
     def sqlite3_db_application_id(pathname):

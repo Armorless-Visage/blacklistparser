@@ -10,6 +10,9 @@ from gphull.core import Logging
 from tempfile import NamedTemporaryFile
 from shutil import copy
 from urllib import error
+import os
+from sqlite3 import Error as SQLError
+from urllib.error import URLError
 
 
 class App:
@@ -25,14 +28,14 @@ class App:
             self.args.logpath)
         self.logger.log.info('Initalizing database')
         self.db = Database.Manager(self.args.database)
-        self.parser_action = { 
+        self.parser_action = {
             'source': self.action_source,
             'address': self.action_address,
             'update': self.action_update,
             'output': self.action_output }
         self.parser_action[self.args.subparser_name]()
 
-    def setup_args(self):        
+    def setup_args(self):
         '''
         argparse
         '''
@@ -46,7 +49,7 @@ class App:
         self.address_parser = self.subparser.add_parser('address')
         self.update_parser = self.subparser.add_parser('update')
         self.output_parser = self.subparser.add_parser('output')
-    
+
         # add option to control logging output level
         self.logging = self.parent_parser.add_argument_group()
         self.logging_verb = self.parent_parser.add_mutually_exclusive_group()
@@ -70,7 +73,7 @@ class App:
             choices=[0, 1, 2, 3, 4, 5, 6, 7],
             action='store'
             )
-    
+
         self.logging.add_argument(
             '-l',
             '--logpath',
@@ -84,7 +87,7 @@ class App:
             help='use user syslog facility for logging',
             action='store_true',
             default=True)
-    
+
         '''
         source subparser
         '''
@@ -113,7 +116,7 @@ class App:
             type=int,
             required=True
             )
-        
+
         self.source_ex.add_argument(
             '-r',
             '--remove',
@@ -156,7 +159,7 @@ class App:
             type=int,
             required=True
             )
-        
+
         self.address_ex.add_argument(
             '-r',
             '--remove',
@@ -229,22 +232,21 @@ class App:
             action='store',
             required=True
             )
-    
+
         self.args = self.parent_parser.parse_args()
-    
+
         if self.args.subparser_name is None:
             no_action_msg = ('An action must be specified. eg. '
                 + 'gphull --database /tmp/test.db source'
                 + '--add https://example.com --frequency 3600 '
                 + '--format \'ipset\'')
             raise self.parent_parser.error(no_action_msg)
-        # so the function can be used to get the args directly, return the parsed args
         if self.args.subparser_name == 'output':
             self.base_type = Data.BASE_TYPE[self.args.format]
         if self.args.subparser_name == 'source':
             self.base_type = Data.BASE_TYPE[self.args.format]
         return self.args
-        
+
     def action_source(self):
         self.logger.log.debug('starting source action')
         if self.args.add is not None:
@@ -302,11 +304,11 @@ class App:
             except Exceptions.NoMatchesFound:
                 # success removing url
                 self.logger.log.info('Removed source url from database OK')
-            
+
         else:
             msg = 'source action must include --add or --remove'
             raise self.source_parser.error(msg)
-    
+
     def action_address(self):
         if self.args.add is not None:
             self.db.add_element(
@@ -322,7 +324,7 @@ class App:
         else:
             sperr = 'either --add or --remove must be specified'
             raise self.source_parser.error(sperr)
-    
+
     def action_output(self):
         '''
         Validate everything from the db then format and finally write output
@@ -333,6 +335,7 @@ class App:
         results = self.db.pull_names_2(self.args.expiry, self.base_type)
         if not results:
             raise Exceptions.DatabaseError('No results from db found')
+
         pending = []
         for result in results:
             if Data.VALIDATOR[self.base_type](result[0]):
@@ -347,8 +350,8 @@ class App:
         countmsg = ('Counted ' + str(valid) + ' valid addresses')
         # log how many addresses are valid
         self.logger.log.debug(countmsg)
-      
-        
+
+
         if len(pending) < 1:
             self.logger.log.error('No addresses found. Exiting.')
             exit(1)
@@ -358,29 +361,46 @@ class App:
         if not output:
             self.logger.log.error('Nothing to output, exiting non-zero')
             exit(1)
-        
+
+        # gather existing filemode
+        if os.path.exists(self.args.output):
+            stats = os.stat(self.args.output)
+        else:
+            stats = None
+
         with NamedTemporaryFile(mode='w+', delete=True) as tmp:
             tmp.write(output)
             tmp.flush()
             copy(tmp.name, self.args.output)
-            self.logger.log.info('Wrote to ' + str(self.args.output))
-        exit(0)        
-        
+            self.logger.log.warning('Wrote to ' + str(self.args.output))
+        # attempt to set old filemode
+        if stats:
+            try:
+                os.chmod(self.args.output, mode=stats.st_mode)
+            except OSError:
+                err = 'Failed to chmod permissions from original file'
+                self.logger.log.error(err)
+        exit(0)
+
     def action_update(self):
         self.logger.log.info('Started update module')
         retr = []
         try:
             # this will contain a tuple of url, last_modified
-            # the last_modified header will be None or a Last-Modified HTTP header
+            # the last_modified header will be None or a Last-Modified header
             to_be_updated = self.db.pull_active_source_urls()
         except Exceptions.NoMatchesFound:
             self.logger.log.error('No sources ready to update. Exiting.')
             exit(1)
-            
+        self.logger.log.debug(str(len(to_be_updated) +
+            ' sources to be updated'))
+
         # GET THE WEBPAGES
         self.logger.log.info('Started retrieving webpages')
         for entry in to_be_updated: # get the webpages
-            self.logger.log.info('URL last updated ' + str(entry['last_modified']))
+            self.logger.log.info('URL ' +
+                str(entry['url']) + ' last updated ' +
+                str(entry['last_modified']))
             try:
                 response = Net.get_webpage(
                     url=entry['url'],
@@ -391,27 +411,27 @@ class App:
                     'url' : entry['url'] }
                 retr.append(result)
             except error.HTTPError as ue:
-                if ue.code == 404:
-                    self.logger.log.error('404 Error ' + str(entry['url']))
-                elif ue.code == 304:
+                if ue.code == 304:
                     self.logger.log.info('Not Modified ' + str(entry['url']))
                 else:
-                    self.logger.log.error(str(ue.code) + ' Error ' + str(entry['url']))
-        
-                
+                    self.logger.log.error(str(ue.code) +
+                        ' Error ' + str(entry['url']))
+
+        if not retr:
+            self.logger.log.warning('All webpages returned an error')
         # Process webpages into data
         self.logger.log.info('Processing webpages')
         for result in retr:
             try:
                 page = result['web_response'].read().decode('utf-8')
-            except:
+            except URLError:
                 self.logger.log.debug('Webpage failed to decode into utf-8')
                 page = result['web_response'].read()
-           
-            lines = page.splitlines() 
+
+            lines = page.splitlines()
             self.logger.log.debug(str(len(page)) + ' lines in page.')
             self.logger.log.debug(str(result['web_response'].info()))
-            # IPList will only put validated data into self.data and can be used safely
+            # IPList will only put validated data in self.data 
             processed_data = Data.DataList(
                 lines,
                 datatype=result['source_config']['page_format'],
@@ -428,19 +448,21 @@ class App:
                 wurl = result['web_response'].geturl()
                 lmod = result['web_response'].info()['Last-Modified']
                 self.db.update_last_modified(wurl, lmod)
-                self.logger.log.debug('Last-Modified updated for ' + str(wurl) + ' to ' + str(lmod))
-            except:
+                self.logger.log.debug('Last-Modified updated for ' +
+                    str(wurl) + ' to ' + str(lmod))
+            except SQLError:
                 self.logger.log.error('Failed to update Last-Modified')
-            # Update last_updated into sources 
             try:
+                # Update last_updated into sources
                 self.db.touch_source_url(result['url'])
-            except:
-                self.logger.log.error('Failed to update sources with last_updated')
-                
-        # COMMIT        
+            except SQLError:
+                self.logger.log.error('Failed to update source last updated')
+
+
+        # COMMIT
         try:
             self.db.db_conn.commit()
             self.logger.log.debug('Commit to sqlite3 db success')
-        except:
+        except SQLError:
             self.logger.log.debug('Commit to sqlite3 db FAILED')
             raise

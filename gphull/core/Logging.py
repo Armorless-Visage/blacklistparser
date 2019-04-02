@@ -25,7 +25,7 @@ class StartLog:
         else:
             loglevel = INFO
         # logger
-        formatter = Formatter('%(asctime)s - %(name)s - %(message)s')
+        formatter = Formatter('%(name)s - %(message)s')
         self.log = getLogger('gphull')
         self.log.setLevel(loglevel)
         # setup console logger

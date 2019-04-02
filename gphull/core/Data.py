@@ -25,16 +25,16 @@ class DataList:
                     raise Exceptions.ValidatorError(errmsg)
             else:
                 self.data.append(stringified)
-        
-        
+
+
     def __iter__(self):
         return self
     def __next__(self):
         if self.index > len(self.data):
-            raise StopIteration 
+            raise StopIteration
         self.index += 1
         return self.data[self.index]
-    
+
     def add_to_db(self, db_manager):
         '''
         add this list to a databaseb via db connection
@@ -64,7 +64,7 @@ class Format:
         sep = '\n'
         output = sep.join(data)
         return output
-    
+
     @staticmethod
     def unbound_nxdomain(data):
         '''
@@ -75,10 +75,10 @@ class Format:
         output = sep.join(data)
         output = 'local-zone: "' + output + '" always_nxdomain'
         return output
-            
-        
-        
-        
+
+
+
+
 class Validator:
     @staticmethod
     def ipv4_addr(addr, printerr=False):
@@ -109,4 +109,4 @@ FORMAT = {
         'ipset' : Format.newline,
         'unbound_nxdomain' : Format.unbound_nxdomain }
 
-            
+

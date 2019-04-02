@@ -3,7 +3,7 @@
 # Liam Nolan 2018 (c) ISC
 # Full licence terms located in LICENCE file
 
- 
+
 from urllib.request import ProxyHandler, build_opener
 from gphull.core import Exceptions
 
@@ -24,7 +24,7 @@ def get_webpage(url, proxy=False, fake_user_agent=True, last_modified=None):
         opener = build_opener(proxy)
     else:
         opener = build_opener()
-    
+
     # spoof the user agent
     # TODO: add more user agents
     agent = "Mozilla/5.0 (Windows NT 6.2; rv:10.0) Gecko/20100101 Firefox/33.0)"
@@ -32,10 +32,10 @@ def get_webpage(url, proxy=False, fake_user_agent=True, last_modified=None):
     if fake_user_agent:
         headers.append(('User-Agent', agent))
     if last_modified:
-        headers.append(('If-Modified-Since', last_modified)) # VALIDATE
+        headers.append(('If-Modified-Since', last_modified)) # TODO VALIDATE
 
     opener.addheaders = headers
-    
+
     # try and get the webpage
     page = opener.open(url)
 
