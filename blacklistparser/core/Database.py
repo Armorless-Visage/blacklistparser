@@ -57,7 +57,7 @@ class Manager:
                 "name TEXT, " +
                 "membership TEXT )")
         application_id = ("PRAGMA application_id = 1915402268")
-        user_version = ("PRAGMA user_version = 0x1")
+        user_version = ("PRAGMA user_version = 0x2")
         try:
             self.db_cur.execute(application_id)
             self.db_cur.execute(user_version)
