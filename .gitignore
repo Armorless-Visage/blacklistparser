@@ -1,6 +1,6 @@
 dist/
 build/
-blockparser/tests/
+blacklistparser/tests/
 __pycache__/
 *.pyc
 *.swp

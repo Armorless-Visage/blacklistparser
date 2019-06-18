@@ -9,8 +9,8 @@ setup(
         description='ip/domain blacklist management tool',
         author='Liam Nolan',
         author_email='Armorless-Visage@users.noreply.github.com',
-        url='https://github.com/Armorless-Visage/gphull',
-        packages=['gphull', 'gphull.core'],
+        url='https://github.com/Armorless-Visage/blacklistparser',
+        packages=['blacklistparser', 'blacklistparser.core'],
         classifiers=[
             'Intended Audience :: System Administrators',
             'Operating System :: BSD :: OpenBSD',
