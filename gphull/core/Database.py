@@ -50,6 +50,9 @@ class Manager:
                 "last_seen REAL, " +
                 "source_url TEXT, " +
                 "UNIQUE ( name, source_url ))")
+        exceptions_table = ("CREATE TABLE IF NOT EXISTS exceptions ( " +
+                "name TEXT, " +
+                "data_format TEXT, )")
         groups_table = ("CREATE TABLE IF NOT EXISTS data ( " +
                 "name TEXT, " +
                 "membership TEXT )")
@@ -61,15 +64,20 @@ class Manager:
 
             self.db_cur.execute(source_table)
             self.db_cur.execute(data_table)
+            self.db_cur.execute(exceptions_table)
             self.db_cur.execute(groups_table)
             self.db_conn.commit()
             return True
         except DatabaseError:
             raise
 
-    def pull_names_2(self, timeout, data_format):
+    def pull_names_2(self, timeout, data_format, exceptions=True):
         line = ('SELECT name FROM data WHERE (last_seen + ? >= ?) AND (data_format = ?)')
-        self.db_cur.execute(line, (timeout, time(), data_format))
+        except_line = ('SELECT name FROM data WHERE (last_seen + ? >= ?) AND (data_format = ?) AND name NOT IN (SELECT name FROM exceptions) ')
+        if exceptions:
+            self.db_cur.execute(except_line, (timeout, time(), data_format))
+        else:
+            self.db_cur.execute(line, (timeout, time(), data_format))
         return self.db_cur.fetchall()
 
     def pull_active_source_urls(self):
