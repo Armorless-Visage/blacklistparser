@@ -52,7 +52,7 @@ class Manager:
                 "UNIQUE ( name, source_url ))")
         exceptions_table = ("CREATE TABLE IF NOT EXISTS exceptions ( " +
                 "name TEXT, " +
-                "data_format TEXT, )")
+                "data_format TEXT )")
         groups_table = ("CREATE TABLE IF NOT EXISTS data ( " +
                 "name TEXT, " +
                 "membership TEXT )")
@@ -61,7 +61,7 @@ class Manager:
         try:
             self.db_cur.execute(application_id)
             self.db_cur.execute(user_version)
-
+            # set up tables
             self.db_cur.execute(source_table)
             self.db_cur.execute(data_table)
             self.db_cur.execute(exceptions_table)
