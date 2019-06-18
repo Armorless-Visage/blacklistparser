@@ -153,15 +153,6 @@ class App:
             help='Add a source url eg. http://example.com/blacklist',
             action='store',
             )
-        self.address_parser.add_argument(
-            '-f',
-            '--frequency',
-            help='Frequency in seconds between updating source urls',
-            action='store',
-            type=int,
-            required=True
-            )
-
         self.address_ex.add_argument(
             '-r',
             '--remove',
@@ -318,30 +309,22 @@ class App:
             raise self.source_parser.error(msg)
 
     def action_address(self):
+        if self.args.whitelist and self.args.source:
+            errmsg = '--whitelist and --source are exclusive'
+            raise self.source_parser.error(errmsg)
         if self.args.add is not None:
-            if self.args.whitelist:
-                self.db.add_element(
-                        self.args.add,
-                        self.args.type,
-                        self.args.whitelist)
-            else: 
-                self.db.add_element(
-                        self.args.add,
-                        self.args.type,
-                        self.args.source,
-                        self.args.whitelist)
+            self.db.add_element(
+                    self.args.add,
+                    self.args.type,
+                    self.args.source,
+                    self.args.whitelist)
             self.db.db_conn.commit()
         elif self.args.remove is not None:
-            if whitelist:
-                self.db.remove_element(
-                    self.args.remove,
-                    self.args.source)
-                self.db.db_conn.commit()
-            else:
-                self.db.remove_element(
-                    self.args.remove,
-                    self.args.source)
-                self.db.db_conn.commit()
+            self.db.remove_element(
+                self.args.remove,
+                self.args.source,
+                self.args.whitelist)
+            self.db.db_conn.commit()
         else:
             sperr = 'either --add or --remove must be specified'
             raise self.source_parser.error(sperr)

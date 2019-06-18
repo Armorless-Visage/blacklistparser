@@ -180,7 +180,7 @@ class Manager:
             " SET last_seen=?, source_url=? WHERE name=?")
 
         white_line = ("INSERT OR IGNORE INTO exceptions " +
-            " VALUES (name=?, data_format=?) ")
+            " VALUES (?, ?) ")
 
         if whitelist:
             self.db_cur.execute(white_line, whitelist_insert)
