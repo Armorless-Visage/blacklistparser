@@ -138,12 +138,14 @@ class App:
         self.address_parser.add_argument(
             '-d',
             '--database',
-            help='file path of database',
+            help='File path of database',
             type=types.base_path_type,
             action='store',
             required=True
             )
         self.address_ex = self.address_parser.add_mutually_exclusive_group(
+            required=True)
+        self.address_wl = self.address_parser.add_mutually_exclusive_group(
             required=True)
         self.address_ex.add_argument(
             '-a',
@@ -169,16 +171,22 @@ class App:
         self.address_parser.add_argument(
             '-t',
             '--type',
-            help='input/output format',
+            help='Input/Output format',
             action='store',
             choices=['ip', 'domain'],
             required=True
             )
-        self.address_parser.add_argument(
+        self.address_wl.add_argument(
             '-s',
             '--source',
-            help='define a url to be set as the source of the address',
+            help='Define a url to be set as the source of the address',
             action='store',
+            )
+        self.address_wl.add_argument(
+            '-w',
+            '--whitelist',
+            help='Add or Remove an address from the whitelist table',
+            action='store_true'
             )
         '''
         output subparser
@@ -311,16 +319,29 @@ class App:
 
     def action_address(self):
         if self.args.add is not None:
-            self.db.add_element(
-                    self.args.add,
-                    self.args.type,
-                    self.args.source)
+            if self.args.whitelist:
+                self.db.add_element(
+                        self.args.add,
+                        self.args.type,
+                        self.args.whitelist)
+            else: 
+                self.db.add_element(
+                        self.args.add,
+                        self.args.type,
+                        self.args.source,
+                        self.args.whitelist)
             self.db.db_conn.commit()
         elif self.args.remove is not None:
-            self.db.remove_element(
-                self.args.remove,
-                self.args.source)
-            self.db.db_conn.commit()
+            if whitelist:
+                self.db.remove_element(
+                    self.args.remove,
+                    self.args.source)
+                self.db.db_conn.commit()
+            else:
+                self.db.remove_element(
+                    self.args.remove,
+                    self.args.source)
+                self.db.db_conn.commit()
         else:
             sperr = 'either --add or --remove must be specified'
             raise self.source_parser.error(sperr)

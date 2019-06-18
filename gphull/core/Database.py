@@ -156,7 +156,7 @@ class Manager:
 
         return True
 
-    def add_element(self, data, data_type, source_url):
+    def add_element(self, data, data_type, source_url, whitelist=False):
         '''
         add a single element to the db
         NOTE: this checks time.time() every time it is executed, probably
@@ -172,15 +172,23 @@ class Manager:
             current_time,
             source_url)
         time_update = (current_time, source_url, data.rstrip())
+        whitelist_insert = (data.rstrip(), data_type)
 
         line = (" INSERT OR IGNORE INTO data" +
                 " VALUES ( ?, ?, ?, ?, ? ) ")
         time_line = (" UPDATE data" +
             " SET last_seen=?, source_url=? WHERE name=?")
-        self.db_cur.execute(line, data_insert)
-        self.db_cur.execute(time_line, time_update)
 
-    def remove_element(self, data, source_url=None):
+        white_line = ("INSERT OR IGNORE INTO exceptions " +
+            " VALUES (name=?, data_format=?) ")
+
+        if whitelist:
+            self.db_cur.execute(white_line, whitelist_insert)
+        else:
+            self.db_cur.execute(line, data_insert)
+            self.db_cur.execute(time_line, time_update)
+
+    def remove_element(self, data, source_url=None, whitelist=False):
         '''
         Remove a single element from the data table, by default the
         function removes all entries matching 'data' regardless of source_url.
@@ -192,9 +200,15 @@ class Manager:
         if not isinstance(source_url, None) and not isinstance(source_url, str):
             raise Exceptions.NotString('source_url must be a string or None')
         element = data.rstrip()
-        if source_url is None:
+        if not source_url and not whitelist:
             data_remove = (element,)
             remove_line = (" DELETE FROM data WHERE name=? ")
+        elif not source_url and whitelist:
+            data_remove = (element,)
+            remove_line = (" DELETE FROM exceptions WHERE name=? ")
+        elif source_url and whitelist:
+            errmsg = 'Can not operate on whitelist with source url'
+            raise Exceptions.DatabaseError(errmsg)
         else:
             data_remove = (element, source_url)
             remove_line = (" DELETE FROM data WHERE name=? AND source=? ")
