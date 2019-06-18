@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Liam Nolan (c) 2018 ISC
+# Liam Nolan (c) 2019 ISC
 # Full licence terms located in LICENCE file
 
 from os import path

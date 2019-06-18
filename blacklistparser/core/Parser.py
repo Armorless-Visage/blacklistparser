@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Liam Nolan (c) 2018 ISC
+# Liam Nolan (c) 2019 ISC
 
 import re
 from abc import ABCMeta, abstractmethod

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Liam Nolan (c) 2018 ISC
+# Liam Nolan (c) 2019 ISC
 
 from os import path
 from time import time

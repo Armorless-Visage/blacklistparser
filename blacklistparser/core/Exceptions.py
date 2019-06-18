@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Liam Nolan 2018 (c) ISC
+# Liam Nolan 2019 (c) ISC
 
 class ExtractorError(Exception):
     '''

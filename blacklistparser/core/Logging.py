@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
-# Liam Nolan (c) 2017
-# BSD 2-Clause
+# Liam Nolan (c) 2019 ISC
 # Full licence terms located in LICENCE file
 
 from logging import getLogger, StreamHandler, Formatter

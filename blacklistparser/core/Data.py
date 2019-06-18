@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Liam Nolan (c) 2018 ISC
+# Liam Nolan (c) 2019 ISC
 
 from blacklistparser.core import Exceptions, Database, Regex
 
