@@ -4,7 +4,7 @@
 # BSD 2-Clause
 # Full licence terms located in LICENCE file
 
-from gphull.core import App
+from blacklistparser.core import App
 
 if __name__ == '__main__':
     try:

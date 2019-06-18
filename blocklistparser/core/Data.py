@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Liam Nolan (c) 2018 ISC
 
-from gphull.core import Exceptions, Database, Regex
+from blacklistparser.core import Exceptions, Database, Regex
 
 
 class DataList:

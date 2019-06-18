@@ -3,7 +3,7 @@
 
 import re
 from abc import ABCMeta, abstractmethod
-from gphull.core import Exceptions, Regex
+from blacklistparser.core import Exceptions, Regex
 
 class BaseParser(metaclass=ABCMeta):
 

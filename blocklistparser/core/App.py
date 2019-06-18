@@ -5,8 +5,8 @@
 # Full licence terms located in LICENCE file
 
 from argparse import ArgumentParser
-from gphull.core import Database, types, Exceptions, Net, Data
-from gphull.core import Logging
+from blacklistparser.core import Database, types, Exceptions, Net, Data
+from blacklistparser.core import Logging
 from tempfile import NamedTemporaryFile
 from shutil import copy
 from urllib import error
@@ -40,7 +40,7 @@ class App:
         argparse
         '''
         self.parent_parser = ArgumentParser(
-            prog='gphull',
+            prog='blacklistparser',
             conflict_handler='resolve',
             add_help=False)
         self.subparser = self.parent_parser.add_subparsers(
@@ -236,7 +236,7 @@ class App:
 
         if self.args.subparser_name is None:
             no_action_msg = ('An action must be specified. eg. '
-                + 'gphull --database /tmp/test.db source'
+                + 'blacklistparser --database /tmp/test.db source'
                 + '--add https://example.com --frequency 3600 '
                 + '--format \'ipset\'')
             raise self.parent_parser.error(no_action_msg)

@@ -7,7 +7,7 @@
 from logging import getLogger, StreamHandler, Formatter
 from logging.handlers import WatchedFileHandler, SysLogHandler
 from logging import DEBUG, INFO, CRITICAL
-from gphull.core import types
+from blacklistparser.core import types
 
 
 class StartLog:
@@ -26,7 +26,7 @@ class StartLog:
             loglevel = INFO
         # logger
         formatter = Formatter('%(name)s - %(message)s')
-        self.log = getLogger('gphull')
+        self.log = getLogger('blacklistparser')
         self.log.setLevel(loglevel)
         # setup console logger
         self.console_log = StreamHandler()

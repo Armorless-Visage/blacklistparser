@@ -5,7 +5,7 @@
 
 
 from urllib.request import ProxyHandler, build_opener
-from gphull.core import Exceptions
+from blacklistparser.core import Exceptions
 
 def get_webpage(url, proxy=False, fake_user_agent=True, last_modified=None):
     '''

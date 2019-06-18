@@ -4,8 +4,8 @@
 from distutils.core import setup
 
 setup(
-        name='gphull',
-        version='0.1.0.dev11',
+        name='blacklistparser',
+        version='0.1.0.dev12',
         description='ip/domain blacklist management tool',
         author='Liam Nolan',
         author_email='Armorless-Visage@users.noreply.github.com',

@@ -6,7 +6,7 @@ from time import time
 from struct import unpack
 from sqlite3 import connect, DatabaseError
 
-from gphull.core import Exceptions
+from blacklistparser.core import Exceptions
 
 # SQLITE3 Application ID
 APPLICATION_ID = 0x722ab81c
