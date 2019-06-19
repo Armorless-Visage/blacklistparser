@@ -9,7 +9,7 @@ from blacklistparser.core import Logging
 from tempfile import NamedTemporaryFile
 from shutil import copy
 from urllib import error
-import os
+from os import path, stat, chmod as os_path os_stat os_chmod
 from sqlite3 import Error as SQLError
 from urllib.error import URLError
 
@@ -130,6 +130,14 @@ class App:
             choices=list(Data.VALIDATOR.keys()),
             required=True
             )
+        self.source_parser.add_argument(
+            '-g',
+            '--group',
+            help='add or remove source from group',
+            action='store',
+            type=str
+            )
+
         '''
         address subparser
         '''
@@ -244,7 +252,15 @@ class App:
         if self.args.subparser_name == 'source':
             self.base_type = Data.BASE_TYPE[self.args.format]
         return self.args
-
+    def _action_group(self):
+        glogmsg = ('attempting to add source url: ' + self.args.add +
+            ' to group ' + self.args.group)
+        self.logger.log.info(glogmsg)
+        Database.Manager.change_group(
+            self.db,
+            self.args.group,
+            self.args.add)
+        self.logger.log.info('Changed group OK')
     def action_source(self):
         self.logger.log.debug('starting source action')
         if self.args.add is not None:
@@ -256,6 +272,8 @@ class App:
                 self.db,
                 self.args.add)
                 self.logger.log.info('source url already present in database')
+                if self.args.group:
+                    self._action_group()
                 # success
                 exit(0)
             except Exceptions.NoMatchesFound:
@@ -275,6 +293,8 @@ class App:
                     self.db,
                     self.args.add)
                 self.logger.log.info('source added to database OK')
+                if self.args.group:
+                    self._action_group()
                 # success
                 exit(0)
             except Exceptions.NoMatchesFound:
@@ -366,8 +386,8 @@ class App:
             exit(1)
 
         # gather existing filemode
-        if os.path.exists(self.args.output):
-            stats = os.stat(self.args.output)
+        if os_path.exists(self.args.output):
+            stats = os_stat(self.args.output)
         else:
             stats = None
 
@@ -379,7 +399,7 @@ class App:
         # attempt to set old filemode
         if stats:
             try:
-                os.chmod(self.args.output, mode=stats.st_mode)
+                os_chmod(self.args.output, mode=stats.st_mode)
             except OSError:
                 err = 'Failed to chmod permissions from original file'
                 self.logger.log.error(err)

@@ -9,6 +9,7 @@ from sqlite3 import connect, DatabaseError
 from blacklistparser.core import Exceptions
 
 # SQLITE3 Application ID
+# from PRAGMA application_id = 1915402268
 APPLICATION_ID = 0x722ab81c
 
 class Manager:
@@ -20,11 +21,11 @@ class Manager:
         if path.isfile(db_path):
             # check file is sqlite3 format
             if self.sqlite3_db_file_type(db_path) is False:
-                errmsg = 'Existing file ' + str(db_path) + ' is not a sqlite3 database'
+                errmsg = 'Existing file ' + str(db_path) + ' not a sqlite3 db'
                 raise Exceptions.BadFileType(errmsg)
             # check file has the right application_id for blocklistparser
             if self.sqlite3_db_application_id(db_path) is False:
-                errmsg = 'File is a sqlite3 db, but the application_id is not correct'
+                errmsg = 'File is a sqlite3 db, but the application_id is wrong'
                 raise Exceptions.BadFileType(errmsg)
         self.db_conn = connect(db_path)
         self.db_cur = self.db_conn.cursor()
@@ -33,8 +34,8 @@ class Manager:
 
     def init_db(self):
         '''
-        initalizes the database tables 'sources' to hold source urls
-        and update frequency, and 'data' to hold the actual content in those pages
+        initalizes the database tables 'sources' to hold source urls and
+        update frequency, and 'data' to hold the actual content in those pages
         '''
         # sources table gets special formatting
         source_table = ("CREATE TABLE IF NOT EXISTS sources ( " +
@@ -54,9 +55,6 @@ class Manager:
         exceptions_table = ("CREATE TABLE IF NOT EXISTS exceptions ( " +
                 "name TEXT, " +
                 "data_format TEXT )")
-        groups_table = ("CREATE TABLE IF NOT EXISTS data ( " +
-                "name TEXT, " +
-                "membership INT )")
         # set an application ID and user_version
         application_id = ("PRAGMA application_id = 1915402268")
         user_version = ("PRAGMA user_version = 0x3")
@@ -74,8 +72,10 @@ class Manager:
             raise
 
     def pull_names_2(self, timeout, data_format, exceptions=True):
-        line = ('SELECT name FROM data WHERE (last_seen + ? >= ?) AND (data_format = ?)')
-        except_line = ('SELECT name FROM data WHERE (last_seen + ? >= ?) AND (data_format = ?) AND name NOT IN (SELECT name FROM exceptions) ')
+        line = ('SELECT name FROM data WHERE (last_seen + ? >= ?) ' +
+            'AND (data_format = ?)')
+        except_line = ('SELECT name FROM data WHERE (last_seen + ? >= ?) AND ' +
+            '(data_format = ?) AND name NOT IN (SELECT name FROM exceptions) ')
         if exceptions:
             self.db_cur.execute(except_line, (timeout, time(), data_format))
         else:
@@ -122,8 +122,6 @@ class Manager:
         line = '''UPDATE sources SET last_updated=? WHERE url=?'''
         self.db_cur.execute(line, tu)
         return True
-
-
 
     def bulk_add(self, data_lst, data_type, source_url):
         '''
@@ -229,14 +227,21 @@ class Manager:
         # NOTE: Do sql real vals overflow after 64b?
 
         # url, source page format, page update timeout,
-        # last_updated set to 61sec after epoch (never)
+        # last_updated set to 61sec after epo=`=jedi=0, ch (never)=`= (*_*param x*_*) =`=jedi=`=
         tu = (str(url), str(dataformat), float(timeout), float(61), None)
 
         try:
-            line = '''INSERT OR IGNORE INTO sources VALUES ( ?, ?, ?, ?, ? )'''
+            line = ("INSERT OR IGNORE INTO sources VALUES ( " +
+                "url=?, page_format=?, last_updated=?, " +
+                "last_modified_head=?, membership=? )")
             self.db_cur.execute(line, tu)
         except DatabaseError:
             raise
+        return True
+
+    def change_group(self, group, source_url):
+        line = ("UPDATE sources SET group=? WHERE url=?")
+        self.db.cur.execute(line, (str(group), str(source_url))
         return True
 
     def delete_source_url(self, url):
