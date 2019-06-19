@@ -56,8 +56,8 @@ class Manager:
                 '''"name" TEXT, ''' +
                 '''"data_format" TEXT )''')
         # set an application ID and user_version
-        application_id = ("PRAGMA application_id = 1915402268")
-        user_version = ("PRAGMA user_version = 0x3")
+        application_id = ('''PRAGMA application_id = 1915402268''')
+        user_version = ('''PRAGMA user_version = 0x3''')
         try:
             self.db_cur.execute(application_id)
             self.db_cur.execute(user_version)
@@ -143,10 +143,10 @@ class Manager:
             time_update.append((current_time, data, source_url))
 
         #NOTE: this code above only writes the last url w/ addr to source
-        iline = (" INSERT OR IGNORE INTO data" +
-                " VALUES ( ?, ?, ?, ?, ? )")
-        tline = (" UPDATE data" +
-                " SET last_seen=? WHERE name=? AND source_url=?")
+        iline = (''' INSERT OR IGNORE INTO data''' +
+                ''' VALUES ( ?, ?, ?, ?, ? )''')
+        tline = (''' UPDATE data''' +
+                ''' SET last_seen=? WHERE name=? AND source_url=?''')
         try:
             self.db_cur.executemany(iline, data_insert)
             self.db_cur.executemany(tline, time_update)
@@ -173,13 +173,13 @@ class Manager:
         time_update = (current_time, source_url, data.rstrip())
         whitelist_insert = (data.rstrip(), data_type)
 
-        line = (" INSERT OR IGNORE INTO data" +
-                " VALUES ( ?, ?, ?, ?, ? ) ")
-        time_line = (" UPDATE data" +
-            " SET last_seen=?, source_url=? WHERE name=?")
+        line = (''' INSERT OR IGNORE INTO data''' +
+                ''' VALUES ( ?, ?, ?, ?, ? ) ''')
+        time_line = (''' UPDATE data ''' +
+            '''SET last_seen=?, source_url=? WHERE name=?''')
 
-        white_line = ("INSERT OR IGNORE INTO exceptions " +
-            " VALUES (?, ?) ")
+        white_line = ('''INSERT OR IGNORE INTO exceptions ''' +
+            '''VALUES (?, ?)''')
 
         if whitelist:
             self.db_cur.execute(white_line, whitelist_insert)
@@ -201,16 +201,16 @@ class Manager:
         element = data.rstrip()
         if not source_url and not whitelist:
             data_remove = (element,)
-            remove_line = (" DELETE FROM data WHERE name=? ")
+            remove_line = ('''DELETE FROM data WHERE name=?''')
         elif not source_url and whitelist:
             data_remove = (element,)
-            remove_line = (" DELETE FROM exceptions WHERE name=? ")
+            remove_line = ('''DELETE FROM exceptions WHERE name=?''')
         elif source_url and whitelist:
             errmsg = 'Can not operate on whitelist with source url'
             raise Exceptions.DatabaseError(errmsg)
         else:
             data_remove = (element, source_url)
-            remove_line = (" DELETE FROM data WHERE name=? AND source=? ")
+            remove_line = ('''DELETE FROM data WHERE name=? AND source=?''')
         self.db_cur.execute(remove_line, data_remove)
 
     def add_source_url(self, url, dataformat, timeout):
