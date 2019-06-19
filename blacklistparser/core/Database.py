@@ -38,23 +38,23 @@ class Manager:
         update frequency, and 'data' to hold the actual content in those pages
         '''
         # sources table gets special formatting
-        source_table = ('''CREATE TABLE IF NOT EXISTS sources (''' +
-                '''"url" TEXT UNIQUE, ''' +
-                '''"page_format" TEXT, ''' +
-                '''"timeout REAL", ''' +
-                '''"last_updated" REAL, ''' +
-                '''"last_modified_head" REAL, ''' +
-                '''"membership" INT)''')
+        source_table = ('''CREATE TABLE IF NOT EXISTS sources ( ''' +
+                '''url TEXT UNIQUE, ''' +
+                '''page_format TEXT, ''' +
+                '''timeout REAL, ''' +
+                '''last_updated REAL, ''' +
+                '''last_modified_head REAL, ''' +
+                '''membership INT )''')
         data_table = ('''CREATE TABLE IF NOT EXISTS data ( ''' +
-                '''"name" TEXT, ''' +
-                '''"data_format" TEXT, ''' +
-                '''"first_seen" REAL, ''' +
-                '''"last_seen" REAL, ''' +
-                '''"source_url" TEXT, ''' +
+                '''name TEXT, ''' +
+                '''data_format TEXT, ''' +
+                '''first_seen REAL, ''' +
+                '''last_seen REAL, ''' +
+                '''source_url TEXT, ''' +
                 '''UNIQUE ( name, source_url ))''')
         exceptions_table = ('''CREATE TABLE IF NOT EXISTS exceptions ( ''' +
-                '''"name" TEXT, ''' +
-                '''"data_format" TEXT )''')
+                '''name TEXT, ''' +
+                '''data_format TEXT )''')
         # set an application ID and user_version
         application_id = ('''PRAGMA application_id = 1915402268''')
         user_version = ('''PRAGMA user_version = 0x3''')
@@ -173,8 +173,8 @@ class Manager:
         time_update = (current_time, source_url, data.rstrip())
         whitelist_insert = (data.rstrip(), data_type)
 
-        line = (''' INSERT OR IGNORE INTO data''' +
-                ''' VALUES ( ?, ?, ?, ?, ? ) ''')
+        line = ('''INSERT OR IGNORE INTO data''' +
+                '''VALUES ( ?, ?, ?, ?, ? ) ''')
         time_line = (''' UPDATE data ''' +
             '''SET last_seen=?, source_url=? WHERE name=?''')
 
@@ -230,9 +230,11 @@ class Manager:
         tu = (str(url), str(dataformat), float(timeout), float(61), None, None)
 
         try:
+#            line = ('''INSERT OR IGNORE INTO sources VALUES ''' +
+#                '''(url=?, page_format=?, timeout=?, last_updated=?, ''' +
+#                '''last_modified_head=?, membership=?)''')
             line = ('''INSERT OR IGNORE INTO sources VALUES ''' +
-                '''(url=?, page_format=?, timeout=?, last_updated=?, ''' +
-                '''last_modified_head=?, membership=?)''')
+                '''(?, ?, ?, ?, ?, ?)''')
             self.db_cur.execute(line, tu)
         except DatabaseError:
             raise
