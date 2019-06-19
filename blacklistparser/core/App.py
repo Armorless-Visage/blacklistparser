@@ -3,16 +3,16 @@
 # Liam Nolan (c) 2019 ISC
 # Full licence terms located in LICENCE file
 
-from argparse import ArgumentParser
-from blacklistparser.core import Database, types, Exceptions, Net, Data
-from blacklistparser.core import Logging
-from tempfile import NamedTemporaryFile
+import os
 from shutil import copy
-from urllib import error
-from os import path, stat, chmod as os_path os_stat os_chmod
+from tempfile import NamedTemporaryFile
+from argparse import ArgumentParser
 from sqlite3 import Error as SQLError
+from urllib import error
 from urllib.error import URLError
 
+from blacklistparser.core import Database, types, Exceptions, Net, Data
+from blacklistparser.core import Logging
 
 class App:
     def __init__(self):
@@ -274,6 +274,7 @@ class App:
                 self.logger.log.info('source url already present in database')
                 if self.args.group:
                     self._action_group()
+                    self.db.db_conn.commit()
                 # success
                 exit(0)
             except Exceptions.NoMatchesFound:
@@ -295,6 +296,7 @@ class App:
                 self.logger.log.info('source added to database OK')
                 if self.args.group:
                     self._action_group()
+                    self.db.db_conn.commit()
                 # success
                 exit(0)
             except Exceptions.NoMatchesFound:
@@ -386,8 +388,8 @@ class App:
             exit(1)
 
         # gather existing filemode
-        if os_path.exists(self.args.output):
-            stats = os_stat(self.args.output)
+        if os.path.exists(self.args.output):
+            stats = os.stat(self.args.output)
         else:
             stats = None
 
@@ -399,7 +401,7 @@ class App:
         # attempt to set old filemode
         if stats:
             try:
-                os_chmod(self.args.output, mode=stats.st_mode)
+                os.chmod(self.args.output, mode=stats.st_mode)
             except OSError:
                 err = 'Failed to chmod permissions from original file'
                 self.logger.log.error(err)

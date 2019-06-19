@@ -38,23 +38,23 @@ class Manager:
         update frequency, and 'data' to hold the actual content in those pages
         '''
         # sources table gets special formatting
-        source_table = ("CREATE TABLE IF NOT EXISTS sources ( " +
-                "url TEXT UNIQUE, " +
-                "page_format TEXT, " +
-                "timeout REAL, " +
-                "last_updated REAL, " +
-                "last_modified_head REAL, " +
-                "membership INT )")
-        data_table = ("CREATE TABLE IF NOT EXISTS data ( " +
-                "name TEXT, " +
-                "data_format TEXT, " +
-                "first_seen REAL, " +
-                "last_seen REAL, " +
-                "source_url TEXT, " +
-                "UNIQUE ( name, source_url ))")
-        exceptions_table = ("CREATE TABLE IF NOT EXISTS exceptions ( " +
-                "name TEXT, " +
-                "data_format TEXT )")
+        source_table = ('''CREATE TABLE IF NOT EXISTS sources (''' +
+                '''"url" TEXT UNIQUE, ''' +
+                '''"page_format" TEXT, ''' +
+                '''"timeout REAL", ''' +
+                '''"last_updated" REAL, ''' +
+                '''"last_modified_head" REAL, ''' +
+                '''"membership" INT)''')
+        data_table = ('''CREATE TABLE IF NOT EXISTS data ( ''' +
+                '''"name" TEXT, ''' +
+                '''"data_format" TEXT, ''' +
+                '''"first_seen" REAL, ''' +
+                '''"last_seen" REAL, ''' +
+                '''"source_url" TEXT, ''' +
+                '''UNIQUE ( name, source_url ))''')
+        exceptions_table = ('''CREATE TABLE IF NOT EXISTS exceptions ( ''' +
+                '''"name" TEXT, ''' +
+                '''"data_format" TEXT )''')
         # set an application ID and user_version
         application_id = ("PRAGMA application_id = 1915402268")
         user_version = ("PRAGMA user_version = 0x3")
@@ -65,7 +65,6 @@ class Manager:
             self.db_cur.execute(source_table)
             self.db_cur.execute(data_table)
             self.db_cur.execute(exceptions_table)
-            self.db_cur.execute(groups_table)
             self.db_conn.commit()
             return True
         except DatabaseError:
@@ -227,21 +226,22 @@ class Manager:
         # NOTE: Do sql real vals overflow after 64b?
 
         # url, source page format, page update timeout,
-        # last_updated set to 61sec after epo=`=jedi=0, ch (never)=`= (*_*param x*_*) =`=jedi=`=
-        tu = (str(url), str(dataformat), float(timeout), float(61), None)
+        # last_updated set to 61sec after epoch (never)
+        tu = (str(url), str(dataformat), float(timeout), float(61), None, None)
 
         try:
-            line = ("INSERT OR IGNORE INTO sources VALUES ( " +
-                "url=?, page_format=?, last_updated=?, " +
-                "last_modified_head=?, membership=? )")
+            line = ('''INSERT OR IGNORE INTO sources VALUES ''' +
+                '''(url=?, page_format=?, timeout=?, last_updated=?, ''' +
+                '''last_modified_head=?, membership=?)''')
             self.db_cur.execute(line, tu)
         except DatabaseError:
             raise
         return True
 
     def change_group(self, group, source_url):
-        line = ("UPDATE sources SET group=? WHERE url=?")
-        self.db.cur.execute(line, (str(group), str(source_url))
+        tu = (str(group), str(source_url))
+        line = ('''UPDATE sources SET membership=? WHERE url=?''')
+        self.db_cur.execute(line, tu)
         return True
 
     def delete_source_url(self, url):
