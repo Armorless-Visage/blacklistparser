@@ -42,7 +42,8 @@ class Manager:
                 "page_format TEXT, " +
                 "timeout REAL, " +
                 "last_updated REAL, " +
-                "last_modified_head REAL )")
+                "last_modified_head REAL, " +
+                "membership INT )")
         data_table = ("CREATE TABLE IF NOT EXISTS data ( " +
                 "name TEXT, " +
                 "data_format TEXT, " +
@@ -55,9 +56,10 @@ class Manager:
                 "data_format TEXT )")
         groups_table = ("CREATE TABLE IF NOT EXISTS data ( " +
                 "name TEXT, " +
-                "membership TEXT )")
+                "membership INT )")
+        # set an application ID and user_version
         application_id = ("PRAGMA application_id = 1915402268")
-        user_version = ("PRAGMA user_version = 0x2")
+        user_version = ("PRAGMA user_version = 0x3")
         try:
             self.db_cur.execute(application_id)
             self.db_cur.execute(user_version)

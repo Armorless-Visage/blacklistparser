@@ -5,7 +5,7 @@ from distutils.core import setup
 
 setup(
         name='blacklistparser',
-        version='0.1.0.dev13',
+        version='0.1.0.dev14',
         description='IP/Domain blacklist management tool',
         author='Liam Nolan',
         author_email='Armorless-Visage@users.noreply.github.com',
