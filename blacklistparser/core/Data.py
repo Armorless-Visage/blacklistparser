@@ -18,13 +18,9 @@ class DataList:
 
         for line in data:
             stringified = str(line)
-            if not VALIDATOR[self.datatype](stringified):
-                # if raise_errors is true throw an exception
-                if raise_errors:
-                    errmsg = ("Not a valid " + self.datatype + " address")
-                    raise Exceptions.ValidatorError(errmsg)
-            else:
-                self.data.append(stringified)
+            errmsg = ("Not a valid " + self.datatype + " address")
+            assert VALIDATOR[self.datatype](stringified), errmsg
+            self.data.append(stringified)
 
 
     def __iter__(self):
