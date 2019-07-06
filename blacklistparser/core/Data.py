@@ -20,9 +20,11 @@ class DataList:
 
         for line in data:
             errmsg = ('Not a valid ' + self.datatype + ' address')
-            assert VALIDATOR[self.datatype](str(line)), errmsg
-            self.data.append(stringified)
-
+            try:
+                assert VALIDATOR[self.datatype](str(line)), errmsg
+                self.data.append(str(line))
+            except AssertionError:
+                pass
 
     def __iter__(self):
         return self
@@ -68,7 +70,7 @@ class Format:
         for use with unbound
         # TODO use generator to fix memory problems
         '''
-        sep = '' always_nxdomain\nlocal-zone: ''
+        sep = ''' always_nxdomain\nlocal-zone: '''
         output = sep.join(data)
         output = 'local-zone: '' + output + '' always_nxdomain'
         return output

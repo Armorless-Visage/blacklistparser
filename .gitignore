@@ -4,3 +4,4 @@ blacklistparser/tests/
 __pycache__/
 *.pyc
 *.swp
+integration_test.sh

@@ -452,20 +452,17 @@ class App:
         for result in retr:
             try:
                 page = result['web_response'].read().decode('utf-8')
+                lines = page.splitlines()
+                
+                self.logger.log.debug(str(len(page)) + ' lines in page.')
+                self.logger.log.debug(str(result['web_response'].info()))
+
+                # check page actually contains something
+                assert len(lines) > 0
+
             except URLError:
                 self.logger.log.debug('Webpage failed to decode into utf-8')
                 page = result['web_response'].read()
-
-            lines = page.splitlines()
-            self.logger.log.debug(str(len(page)) + ' lines in page.')
-            self.logger.log.debug(str(result['web_response'].info()))
-            try:
-                assert len(lines) > 0
-                # IPList will only put validated data in self.data 
-                processed_data = Data.DataList(
-                    lines,
-                    datatype=result['source_config']['page_format'],
-                    source=result['web_response'].geturl())
             except AssertionError:
                 self.logger.log.error('page was empty')
             else: # try and enter data into db and update values only if success
@@ -488,14 +485,12 @@ class App:
                     self.db.update_last_modified(wurl, lmod)
                     self.logger.log.debug('Last-Modified updated for '
                         + str(wurl) + ' to ' + str(lmod))
-                except SQLError:
-                    self.logger.log.error('Failed to update Last-Modified')
-                try:
                     # Update last_updated into sources
                     self.db.touch_source_url(result['url'])
                 except SQLError:
+                    self.logger.log.error('Failed to update Last-Modified')
                     self.logger.log.error('Failed to update source last updated')
-
+                    self.logger.log.error('Aborting without commit')
         # COMMIT
         try:
             self.db.db_conn.commit()
