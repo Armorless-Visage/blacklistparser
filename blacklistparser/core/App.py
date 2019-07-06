@@ -479,18 +479,19 @@ class App:
                     self.logger.log.error('Failed to add page content to db')
                     # raise # this causes bugs when page has no valid content
                 # Update Last-Modified into DB
-                try:
-                    wurl = result['web_response'].geturl()
-                    lmod = result['web_response'].info()['Last-Modified']
-                    self.db.update_last_modified(wurl, lmod)
-                    self.logger.log.debug('Last-Modified updated for '
-                        + str(wurl) + ' to ' + str(lmod))
-                    # Update last_updated into sources
-                    self.db.touch_source_url(result['url'])
-                except SQLError:
-                    self.logger.log.error('Failed to update Last-Modified')
-                    self.logger.log.error('Failed to update source last updated')
-                    self.logger.log.error('Aborting without commit')
+                else:
+                    try:
+                        wurl = result['web_response'].geturl()
+                        lmod = result['web_response'].info()['Last-Modified']
+                        self.db.update_last_modified(wurl, lmod)
+                        self.logger.log.debug('Last-Modified updated for '
+                            + str(wurl) + ' to ' + str(lmod))
+                        # Update last_updated into sources
+                        self.db.touch_source_url(result['url'])
+                    except SQLError:
+                        self.logger.log.error('Failed to update Last-Modified')
+                        self.logger.log.error('Failed to update source last updated')
+                        self.logger.log.error('Aborting without commit')
         # COMMIT
         try:
             self.db.db_conn.commit()
