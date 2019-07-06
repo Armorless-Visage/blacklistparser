@@ -471,7 +471,6 @@ class App:
                     lines,
                     datatype=result['source_config']['page_format'],
                     source=result['web_response'].geturl())
-                assert len(processed_data) > 0, 'Data.DataList is empty'
                 # Add data to DB
                 try:
                     processed_data.add_to_db(self.db)
