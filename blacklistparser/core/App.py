@@ -471,13 +471,14 @@ class App:
                     lines,
                     datatype=result['source_config']['page_format'],
                     source=result['web_response'].geturl())
+                assert len(processed_data) > 0, 'Data.DataList is empty'
                 # Add data to DB
                 try:
                     processed_data.add_to_db(self.db)
                     self.logger.log.debug('Added uncommitted content to db')
                 except Exceptions.ExtractorError:
-                    self.logger.log.error('Failed to add content to db')
-                    raise
+                    self.logger.log.error('Failed to add page content to db')
+                    # raise # this causes bugs when page has no valid content
                 # Update Last-Modified into DB
                 try:
                     wurl = result['web_response'].geturl()

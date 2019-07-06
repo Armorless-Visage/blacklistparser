@@ -75,9 +75,6 @@ class Format:
         output = 'local-zone: '' + output + '' always_nxdomain'
         return output
 
-
-
-
 class Validator:
     @staticmethod
     def ipv4_addr(addr, printerr=False):
