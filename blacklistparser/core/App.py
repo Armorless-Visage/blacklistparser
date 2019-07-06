@@ -448,6 +448,7 @@ class App:
             
         # Process webpages into data
         self.logger.log.info('Processing webpages')
+        db_modified = True
         for result in retr:
             try:
                 page = result['web_response'].read().decode('utf-8')
@@ -458,33 +459,42 @@ class App:
             lines = page.splitlines()
             self.logger.log.debug(str(len(page)) + ' lines in page.')
             self.logger.log.debug(str(result['web_response'].info()))
-            # IPList will only put validated data in self.data 
-            processed_data = Data.DataList(
-                lines,
-                datatype=result['source_config']['page_format'],
-                source=result['web_response'].geturl())
-            # Add data to DB
             try:
-                processed_data.add_to_db(self.db)
-                self.logger.log.debug('Added uncommitted content to db')
-            except Exceptions.ExtractorError:
-                self.logger.log.error('Failed to add content to db')
-                raise
-            # Update Last-Modified into DB
-            try:
-                wurl = result['web_response'].geturl()
-                lmod = result['web_response'].info()['Last-Modified']
-                self.db.update_last_modified(wurl, lmod)
-                self.logger.log.debug('Last-Modified updated for '
-                    + str(wurl) + ' to ' + str(lmod))
-            except SQLError:
-                self.logger.log.error('Failed to update Last-Modified')
-            try:
-                # Update last_updated into sources
-                self.db.touch_source_url(result['url'])
-            except SQLError:
-                self.logger.log.error('Failed to update source last updated')
-
+                assert len(lines) > 0
+                # IPList will only put validated data in self.data 
+                processed_data = Data.DataList(
+                    lines,
+                    datatype=result['source_config']['page_format'],
+                    source=result['web_response'].geturl())
+            except AssertionError:
+                self.logger.log.error('page was empty')
+            else: # try and enter data into db and update values only if success
+                # IPList will only put validated data in self.data 
+                processed_data = Data.DataList(
+                    lines,
+                    datatype=result['source_config']['page_format'],
+                    source=result['web_response'].geturl())
+                # Add data to DB
+                try:
+                    processed_data.add_to_db(self.db)
+                    self.logger.log.debug('Added uncommitted content to db')
+                except Exceptions.ExtractorError:
+                    self.logger.log.error('Failed to add content to db')
+                    raise
+                # Update Last-Modified into DB
+                try:
+                    wurl = result['web_response'].geturl()
+                    lmod = result['web_response'].info()['Last-Modified']
+                    self.db.update_last_modified(wurl, lmod)
+                    self.logger.log.debug('Last-Modified updated for '
+                        + str(wurl) + ' to ' + str(lmod))
+                except SQLError:
+                    self.logger.log.error('Failed to update Last-Modified')
+                try:
+                    # Update last_updated into sources
+                    self.db.touch_source_url(result['url'])
+                except SQLError:
+                    self.logger.log.error('Failed to update source last updated')
 
         # COMMIT
         try:

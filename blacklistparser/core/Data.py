@@ -15,11 +15,12 @@ class DataList:
             raise Exceptions.IncorrectDataType(errmsg)
         self.datatype = datatype
         self.base_type = BASE_TYPE[self.datatype]
+    
+        assert len(data) > 0, 'DataList argument data is empty'
 
         for line in data:
-            stringified = str(line)
-            errmsg = ("Not a valid " + self.datatype + " address")
-            assert VALIDATOR[self.datatype](stringified), errmsg
+            errmsg = ('Not a valid ' + self.datatype + ' address')
+            assert VALIDATOR[self.datatype](str(line)), errmsg
             self.data.append(stringified)
 
 
@@ -67,9 +68,9 @@ class Format:
         for use with unbound
         # TODO use generator to fix memory problems
         '''
-        sep = '" always_nxdomain\nlocal-zone: "'
+        sep = '' always_nxdomain\nlocal-zone: ''
         output = sep.join(data)
-        output = 'local-zone: "' + output + '" always_nxdomain'
+        output = 'local-zone: '' + output + '' always_nxdomain'
         return output
 
 
