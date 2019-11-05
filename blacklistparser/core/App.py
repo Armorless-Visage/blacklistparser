@@ -27,7 +27,7 @@ class App:
             self.args.logpath,
             self.args.loglevel)
         try:
-            self.logger.log.info('Initalizing database')
+            self.logger.log.debug('Initalizing database')
             self.db = Database.Manager(self.args.database)
             self.parser_action = {
                 'source': self.action_source,
@@ -36,11 +36,16 @@ class App:
                 'output': self.action_output }
             self.parser_action[self.args.subparser_name]()
         except Exceptions.UnsuccessfulExit as error:
-            self.logger.log.error(str(error))
+            s = str(error)
+            if s != '': # don't log blank messages
+                self.logger.log.error(s)
             exit(1)
         except Exceptions.ExtractorError as error:
-            self.logger.log.critical(str(error))
+            s = str(error)
+            if s != '':  # don't log blank messages
+                self.logger.log.critical(s)
             exit(1)
+        self.logger.log.debug('Exiting OK')
         exit(0)
 
     def setup_args(self):
@@ -264,7 +269,7 @@ class App:
     def _action_group(self):
         glogmsg = ('attempting to add source url: ' + self.args.add +
             ' to group ' + self.args.group)
-        self.logger.log.info(glogmsg)
+        self.logger.log.debug(glogmsg)
         Database.Manager.change_group(
             self.db,
             self.args.group,
@@ -275,7 +280,7 @@ class App:
         if self.args.add is not None:
             # attempt to add a url
             logmsg = ('attempting to add source url: ' + self.args.add)
-            self.logger.log.info(logmsg)
+            self.logger.log.debug(logmsg)
             try:
                 Database.Manager.test_source_url(
                 self.db,
@@ -430,9 +435,9 @@ class App:
             + ' sources to be updated')
 
         # GET THE WEBPAGES
-        self.logger.log.info('Started retrieving webpages')
+        self.logger.log.debug('Started retrieving webpages')
         for entry in to_be_updated: # get the webpages
-            self.logger.log.info('URL '
+            self.logger.log.debug('URL '
                 + str(entry['url']) + ' last updated '
                 + str(entry['last_modified']))
             try:
@@ -446,12 +451,12 @@ class App:
                 retr.append(result)
             except error.HTTPError as ue:
                 if ue.code == 304:
-                    self.logger.log.info('Not Modified ' + str(entry['url']))
+                    self.logger.log.debug('Not Modified ' + str(entry['url']))
                 else:
                     self.logger.log.error(str(ue.code)
                         + ' Error ' + str(entry['url']))
             except error.URLError as ue:
-                self.logger.log.info('ERROR ' + str(ue))
+                self.logger.log.error('ERROR ' + str(ue))
 
         if not retr:
             self.logger.log.warning('No webpages to parse. Exiting.')
@@ -508,5 +513,5 @@ class App:
             self.db.db_conn.commit()
             self.logger.log.debug('Commit to sqlite3 db success')
         except SQLError:
-            self.logger.log.debug('Commit to sqlite3 db FAILED')
+            self.logger.log.error('Commit to sqlite3 db FAILED')
             raise
