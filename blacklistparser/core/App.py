@@ -24,15 +24,24 @@ class App:
             self.args.verbose,
             self.args.quiet,
             self.args.syslog,
-            self.args.logpath)
-        self.logger.log.info('Initalizing database')
-        self.db = Database.Manager(self.args.database)
-        self.parser_action = {
-            'source': self.action_source,
-            'address': self.action_address,
-            'update': self.action_update,
-            'output': self.action_output }
-        self.parser_action[self.args.subparser_name]()
+            self.args.logpath,
+            self.args.loglevel)
+        try:
+            self.logger.log.info('Initalizing database')
+            self.db = Database.Manager(self.args.database)
+            self.parser_action = {
+                'source': self.action_source,
+                'address': self.action_address,
+                'update': self.action_update,
+                'output': self.action_output }
+            self.parser_action[self.args.subparser_name]()
+        except Exceptions.UnsuccessfulExit as error:
+            self.logger.log.error(str(error))
+            exit(1)
+        except Exceptions.ExtractorError as error:
+            self.logger.log.critical(str(error))
+            exit(1)
+        exit(0)
 
     def setup_args(self):
         '''
@@ -67,9 +76,9 @@ class App:
         self.logging_verb.add_argument(
             '-l',
             '--loglevel',
-            help='specify a loglevel by number 0-7',
-            type=int,
-            choices=[0, 1, 2, 3, 4, 5, 6, 7],
+            help='specify a loglevel by string, this will take priority over -v or -q',
+            type=str,
+            choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
             action='store'
             )
 
@@ -276,7 +285,7 @@ class App:
                     self._action_group()
                     self.db.db_conn.commit()
                 # success
-                exit(0)
+                return
             except Exceptions.NoMatchesFound:
                 # excpected when adding a new url
                 pass
@@ -298,11 +307,11 @@ class App:
                     self._action_group()
                     self.db.db_conn.commit()
                 # success
-                exit(0)
-            except Exceptions.NoMatchesFound:
+                return
+            except Exceptions.NoMatchesFound as error:
                 self.logger.log.error('FAILED to add source url to database!')
                 # fail
-                exit(1)
+                raise Exceptions.UnsuccessfulExit(str(error))
 
         # remove a url
         elif self.args.remove is not None:
@@ -312,7 +321,7 @@ class App:
             except Exceptions.NoMatchesFound:
                 msg = 'Entry does not exist in the database.'
                 self.logger.log.info(msg)
-                exit(0)
+                return
             # attempt to remove url
             self.db.delete_source_url(self.args.remove)
             self.db.db_conn.commit()
@@ -379,13 +388,13 @@ class App:
 
         if len(pending) < 1:
             self.logger.log.error('No addresses found. Exiting.')
-            exit(1)
+            raise Exceptions.UnsuccessfulExit()
 
         # format the page
         output = Data.FORMAT[self.args.format](pending)
         if not output:
             self.logger.log.error('Nothing to output, exiting non-zero')
-            exit(1)
+            raise Exceptions.UnsuccessfulExit()
 
         # gather existing filemode
         if os.path.exists(self.args.output):
@@ -405,7 +414,7 @@ class App:
             except OSError:
                 err = 'Failed to chmod permissions from original file'
                 self.logger.log.error(err)
-        exit(0)
+        return 
 
     def action_update(self):
         self.logger.log.info('Started update module')
@@ -416,7 +425,7 @@ class App:
             to_be_updated = self.db.pull_active_source_urls()
         except Exceptions.NoMatchesFound:
             self.logger.log.error('No sources ready to update. Exiting.')
-            exit(1)
+            raise Exceptions.UnsuccessfulExit()
         self.logger.log.debug(str(len(to_be_updated))
             + ' sources to be updated')
 
@@ -441,10 +450,12 @@ class App:
                 else:
                     self.logger.log.error(str(ue.code)
                         + ' Error ' + str(entry['url']))
+            except error.URLError as ue:
+                self.logger.log.info('ERROR ' + str(ue))
 
         if not retr:
             self.logger.log.warning('No webpages to parse. Exiting.')
-            exit(1)
+            raise Exceptions.UnsuccessfulExit() 
             
         # Process webpages into data
         self.logger.log.info('Processing webpages')

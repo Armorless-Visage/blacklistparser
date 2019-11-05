@@ -6,7 +6,10 @@ class ExtractorError(Exception):
     Base exception class
     '''
     pass
-
+class UnsuccessfulExit(ExtractorError):
+    '''
+    Exit with return of 1
+    '''
 class NotString(ExtractorError):
     '''
     Value is not a string
@@ -40,3 +43,4 @@ class ValidatorError(ExtractorError):
     '''
     Error validating ip/domain
     '''
+

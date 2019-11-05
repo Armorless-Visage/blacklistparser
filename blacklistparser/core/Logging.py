@@ -5,19 +5,23 @@
 
 from logging import getLogger, StreamHandler, Formatter
 from logging.handlers import WatchedFileHandler, SysLogHandler
-from logging import DEBUG, INFO, CRITICAL
+from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
+
 from blacklistparser.core import types
 
 
 class StartLog:
-    def __init__(self, verbose=False, quiet=False, syslog=None, logpath=None):
+    def __init__(self, verbose=False, quiet=False, syslog=None, logpath=None, loglevel=None):
         '''
         start logging facilities
         pass an optional logpath to log to disk (using WatchedFileHandler)
         '''
-        #levels = (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+        levels = {'DEBUG':DEBUG, 'INFO':INFO, 'WARNING':WARNING, 'ERROR':ERROR, 'CRITICAL':CRITICAL}
+        assert loglevel in levels.keys() or loglevel == None, 'log level must be one of ' + str(levels)
         # set loglevel based on verbosity/quiet args
-        if verbose is True and quiet is False:
+        if loglevel is not None:
+            loglevel = levels[loglevel]
+        elif verbose is True and quiet is False:
             loglevel = DEBUG
         elif quiet is True and verbose is False:
             loglevel = CRITICAL

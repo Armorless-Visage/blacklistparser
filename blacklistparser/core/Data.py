@@ -39,8 +39,7 @@ class DataList:
         add this list to a databaseb via db connection
         '''
         # re-validate before entering into db
-        if Database.Manager.bulk_add(
-                db_manager,
+        if db_manager.bulk_add(
                 self.data,
                 self.base_type,
                 self.source_url) is True:
